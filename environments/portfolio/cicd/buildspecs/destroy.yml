@@ -4,7 +4,7 @@ phases:
   install:
     commands:
       # Pin to same version as apply for consistency
-      - terraform_version="1.7.5"
+      - terraform_version="1.15.4"
       - curl -sLO "https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip"
       - unzip -q "terraform_${terraform_version}_linux_amd64.zip"
       - mv terraform /usr/local/bin/
