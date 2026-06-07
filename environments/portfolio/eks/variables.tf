@@ -1,13 +1,3 @@
-variable "aws_account_id" {
-  description = "AWS Account Id"
-  type        = string
-}
-
-variable "aws_iam_user" {
-  description = "AWS IAM User used to login to the console"
-  type        = string
-}
-
 variable "aws_region" {
   description = "AWS region"
   type        = string
