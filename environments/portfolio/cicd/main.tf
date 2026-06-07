@@ -102,6 +102,8 @@ resource "aws_codebuild_project" "terraform_destroy" {
     buildspec = "environments/portfolio/cicd/buildspecs/destroy.yml"
   }
 
+  source_version = var.github_branch
+
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
     image                       = "aws/codebuild/standard:7.0"
