@@ -44,7 +44,7 @@ resource "aws_scheduler_schedule" "terraform_apply" {
     mode = "OFF"
   }
 
-  schedule_expression          = "cron(30 13 ? * MON-FRI *)"
+  schedule_expression          = "cron(30 08 ? * MON-FRI *)" 
   schedule_expression_timezone = "America/New_York"   # handles EST/EDT automatically
 
   target {
@@ -57,8 +57,6 @@ resource "aws_scheduler_schedule" "terraform_apply" {
   }
 
   state = var.schedules_enabled ? "ENABLED" : "DISABLED"
-
-  tags = local.common_tags
 }
 
 # ------------------------------------------------------------
@@ -85,6 +83,4 @@ resource "aws_scheduler_schedule" "terraform_destroy" {
   }
 
   state = var.schedules_enabled ? "ENABLED" : "DISABLED"
-
-  tags = local.common_tags
 }
