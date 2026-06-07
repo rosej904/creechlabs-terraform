@@ -1,0 +1,5 @@
+project_name          = "cl-portfolio"
+aws_region            = "us-east-1"
+state_bucket_name     = "cl-portfolio-tf-state-YOUR_ACCOUNT_ID"
+state_lock_table_name = "cl-portfolio-tf-locks"
+github_repo_url       = "https://github.com/YOUR_USERNAME/YOUR_REPO"

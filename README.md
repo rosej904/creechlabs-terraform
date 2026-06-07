@@ -5,7 +5,7 @@ Infrastructure as Code for portfolio/demo EKS cluster on AWS.
 ## Architecture
 
 ```
-bootstrap/      → S3 + DynamoDB for TF remote state (apply once, never destroy)
+bootstrap/      → S3 with native state locking enabled
 networking/     → VPC, subnets, IGW, NAT Gateway, route tables
 eks/            → EKS cluster, node group, IAM roles, OIDC, EBS CSI driver
 ```
@@ -15,7 +15,7 @@ eks/            → EKS cluster, node group, IAM roles, OIDC, EBS CSI driver
 - Terraform >= 1.6.0
 - AWS CLI configured (`aws configure`)
 - kubectl
-- IAM user with AdministratorAccess
+- IAM user with AdministratorAccess (or minimal permissions required)
 
 ---
 
@@ -23,28 +23,29 @@ eks/            → EKS cluster, node group, IAM roles, OIDC, EBS CSI driver
 
 ### Step 1 — Bootstrap (run once only)
 
-```bash
-cd bootstrap
-
 # Get your account ID
 export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 
-# Update terraform.tfvars with your account ID
+# Update terraform.tfvars with your account ID, you can use below
 sed -i "s/YOUR_ACCOUNT_ID_HERE/$AWS_ACCOUNT_ID/" terraform.tfvars
+
+```bash
+cd bootstrap
 
 terraform init
 terraform apply
 ```
 
-Note the output values. Then update the backend bucket name in:
-- `networking/main.tf` → replace `YOUR_ACCOUNT_ID_HERE`
-- `eks/main.tf` → replace `YOUR_ACCOUNT_ID_HERE`
+
+## Backend note before applying below
+# Note the outputs from above apply and update backend.hcl in respective dirs
+
 
 ### Step 2 — Networking
 
 ```bash
 cd ../networking
-terraform init
+terraform init -backend-config=backend.hcl
 terraform apply
 ```
 

@@ -1,0 +1,61 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      # Install Terraform — pin to specific version for reproducibility
+      - terraform_version="1.15.4"
+      - curl -sLO "https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip"
+      - unzip -q "terraform_${terraform_version}_linux_amd64.zip"
+      - mv terraform /usr/local/bin/
+      - terraform version
+
+  pre_build:
+    commands:
+      - echo "=== Starting Terraform Apply ==="
+      - echo "State bucket - $TF_STATE_BUCKET"
+      - echo "Region - $AWS_REGION"
+      # Verify AWS identity — confirms role assumption worked
+      - aws sts get-caller-identity
+
+  build:
+    commands:
+      # ----------------------------------------------------------
+      # Layer 1 — Networking
+      # ----------------------------------------------------------
+      - echo "=== Applying networking layer ==="
+      - cd environments/portfolio/networking
+      - |
+        terraform init -input=false \
+          -backend-config="bucket=$TF_STATE_BUCKET" \
+          -backend-config="key=environments/portfolio/networking/terraform.tfstate" \
+          -backend-config="region=$AWS_REGION" \
+          -backend-config="use_lockfile=true" \
+          -backend-config="encrypt=true"
+      - terraform apply -auto-approve -input=false
+      - cd ../../..
+
+      # ----------------------------------------------------------
+      # Layer 2 — EKS
+      # ----------------------------------------------------------
+      - echo "=== Applying EKS layer ==="
+      - cd environments/portfolio/eks
+      - |
+        terraform init -input=false \
+          -backend-config="bucket=$TF_STATE_BUCKET" \
+          -backend-config="key=environments/portfolio/eks/terraform.tfstate" \
+          -backend-config="region=$AWS_REGION" \
+          -backend-config="use_lockfile=true" \
+          -backend-config="encrypt=true"
+      - terraform apply -auto-approve -input=false
+      - cd ../../..
+
+  post_build:
+    commands:
+      - |
+        if [ "$CODEBUILD_BUILD_SUCCEEDING" = "1" ]; then
+          echo "=== All layers applied successfully ==="
+        else
+          echo "=== Apply failed — check logs above ==="
+          exit 1
+        fi
