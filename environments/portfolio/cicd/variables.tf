@@ -25,3 +25,9 @@ variable "github_branch" {
   type        = string
   default     = "main"
 }
+
+variable "schedules_enabled" {
+  description = "Enable or disable EventBridge schedules — set false to pause without destroying"
+  type        = bool
+  default     = true
+}
