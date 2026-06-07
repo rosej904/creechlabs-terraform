@@ -1,0 +1,60 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      # Pin to same version as apply for consistency
+      - terraform_version="1.7.5"
+      - curl -sLO "https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip"
+      - unzip -q "terraform_${terraform_version}_linux_amd64.zip"
+      - mv terraform /usr/local/bin/
+      - terraform version
+
+  pre_build:
+    commands:
+      - echo "=== Starting Terraform Destroy ==="
+      - echo "State bucket - $TF_STATE_BUCKET"
+      - echo "Region - $AWS_REGION"
+      - aws sts get-caller-identity
+
+  build:
+    commands:
+      # ----------------------------------------------------------
+      # Reverse order — EKS must go before networking
+      # ----------------------------------------------------------
+
+      # Layer 2 — EKS (destroy first)
+      - echo "=== Destroying EKS layer ==="
+      - cd environments/portfolio/eks
+      - |
+        terraform init -input=false \
+          -backend-config="bucket=$TF_STATE_BUCKET" \
+          -backend-config="key=environments/portfolio/eks/terraform.tfstate" \
+          -backend-config="region=$AWS_REGION" \
+          -backend-config="use_lockfile=true" \
+          -backend-config="encrypt=true"
+      - terraform destroy -auto-approve -input=false
+      - cd ../../..
+
+      # Layer 1 — Networking (destroy last)
+      - echo "=== Destroying networking layer ==="
+      - cd environments/portfolio/networking
+      - |
+        terraform init -input=false \
+          -backend-config="bucket=$TF_STATE_BUCKET" \
+          -backend-config="key=environments/portfolio/networking/terraform.tfstate" \
+          -backend-config="region=$AWS_REGION" \
+          -backend-config="use_lockfile=true" \
+          -backend-config="encrypt=true"
+      - terraform destroy -auto-approve -input=false
+      - cd ../../..
+
+  post_build:
+    commands:
+      - |
+        if [ "$CODEBUILD_BUILD_SUCCEEDING" = "1" ]; then
+          echo "=== All layers destroyed successfully — cost zeroed out ==="
+        else
+          echo "=== Destroy failed — manual cleanup may be required ==="
+          exit 1
+        fi
