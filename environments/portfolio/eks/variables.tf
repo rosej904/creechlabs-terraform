@@ -45,3 +45,9 @@ variable "use_spot_instances" {
   type        = bool
   default     = false
 }
+
+variable "eks_admin_users" {
+  description = "List of IAM usernames to grant kubectl cluster-admin access"
+  type        = list(string)
+  default     = []
+}
