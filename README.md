@@ -5,9 +5,11 @@ Infrastructure as Code for portfolio/demo EKS cluster on AWS.
 ## Architecture
 
 ```
-bootstrap/      → S3 with native state locking enabled
-networking/     → VPC, subnets, IGW, NAT Gateway, route tables
-eks/            → EKS cluster, node group, IAM roles, OIDC, EBS CSI driver
+bootstrap/      S3 with native state locking enabled
+networking/     VPC, subnets, IGW, NAT Gateway, route tables
+eks/            EKS cluster, node group, IAM roles, OIDC, EBS CSI driver
+cicd/           Codebuild projects, IAM roles, buildspecs, Eventbridges schedules
+dns-tls/        Route53 Hosted Zones, ACM Cert & Validations
 ```
 
 ## Prerequisites
