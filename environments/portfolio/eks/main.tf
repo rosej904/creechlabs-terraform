@@ -172,6 +172,27 @@ resource "aws_iam_policy" "eks_console_admin_assume" {
   tags = local.common_tags
 }
 
+# Grant local IAM users kubectl access directly for local testing 
+resource "aws_eks_access_entry" "admin_users" {
+  for_each = toset(var.eks_admin_users)
+
+  cluster_name      = aws_eks_cluster.main.name
+  principal_arn     = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${each.value}"
+  type              = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "admin_users" {
+  for_each = toset(var.eks_admin_users)
+
+  cluster_name  = aws_eks_cluster.main.name
+  principal_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/${each.value}"
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+}
+
 # Create the IAM Group for eks admins
 resource "aws_iam_group" "assume_role_group" {
   name = "${var.project_name}-eks-console-admins"
