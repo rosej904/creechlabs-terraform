@@ -6,6 +6,10 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.0"
+    }
   }
 
   backend "s3" {}
@@ -15,35 +19,11 @@ provider "aws" {
   region = var.aws_region
 }
 
-# ------------------------------------------------------------
-# Pull outputs from upstream layers
-# ------------------------------------------------------------
+provider "cloudflare" {
+  api_token = var.cloudflare_api_token
+}
+
 data "aws_caller_identity" "current" {}
-
-data "terraform_remote_state" "networking" {
-  backend = "s3"
-  config = {
-    bucket = "${var.project_name}-tf-state-${data.aws_caller_identity.current.account_id}"
-    key    = "environments/portfolio/networking/terraform.tfstate"
-    region = var.aws_region
-  }
-}
-
-data "terraform_remote_state" "eks" {
-  backend = "s3"
-  config = {
-    bucket = "${var.project_name}-tf-state-${data.aws_caller_identity.current.account_id}"
-    key    = "environments/portfolio/eks/terraform.tfstate"
-    region = var.aws_region
-  }
-}
-
-# ------------------------------------------------------------
-# Route53 Hosted Zone
-# ------------------------------------------------------------
-resource "aws_route53_zone" "main" {
-  name = var.domain_name
-}
 
 # ------------------------------------------------------------
 # ACM Certificate
@@ -53,34 +33,36 @@ resource "aws_acm_certificate" "main" {
   subject_alternative_names = ["*.${var.domain_name}"]
   validation_method         = "DNS"
 
-  # Must create new cert before destroying old one on any changes
   lifecycle {
     create_before_destroy = true
   }
 }
 
 # ------------------------------------------------------------
-# ACM DNS Validation Records
+# Cloudflare DNS validation records
 # ------------------------------------------------------------
-resource "aws_route53_record" "cert_validation" {
+resource "cloudflare_record" "acm_validation" {
   for_each = {
     for dvo in aws_acm_certificate.main.domain_validation_options : dvo.domain_name => {
-      name   = dvo.resource_record_name
-      record = dvo.resource_record_value
-      type   = dvo.resource_record_type
+      name  = dvo.resource_record_name
+      value = dvo.resource_record_value
+      type  = dvo.resource_record_type
     }
+    if dvo.domain_name == var.domain_name
   }
 
-  allow_overwrite = true
+  zone_id         = var.cloudflare_zone_id
   name            = each.value.name
-  records         = [each.value.record]
-  ttl             = 60
+  content         = each.value.value
   type            = each.value.type
-  zone_id         = aws_route53_zone.main.zone_id
+  ttl             = 60
+  proxied         = false
+  allow_overwrite = true 
+
+  comment = "ACM certificate validation — managed by Terraform"
 }
 
-# Wait for ACM to validate — required before ALB can use the cert
 resource "aws_acm_certificate_validation" "main" {
   certificate_arn         = aws_acm_certificate.main.arn
-  validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
+  validation_record_fqdns = [for record in cloudflare_record.acm_validation : record.hostname]
 }

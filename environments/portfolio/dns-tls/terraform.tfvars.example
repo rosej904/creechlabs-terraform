@@ -1,0 +1,4 @@
+# Replace with cloudflare token
+cloudflare_api_token   = "abc123456"
+cloudflare_zone_id     = "abc123"
+domain_name            = "domain.com"
