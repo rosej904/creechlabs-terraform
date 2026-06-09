@@ -8,12 +8,12 @@ Infrastructure as Code for portfolio/demo EKS cluster on AWS.
 --Apply Once, Never Destroy--
 bootstrap/      S3 with native state locking enabled
 ci/cd/          Codebuild projects, buildspecs, Eventbridge schedules, IAM roles
-dns-tls/        Route53 hosted zones, ACM certs & validations
+dns-tls/        ACM certs, Cloudflare cname Record, logical validation
 
 --Created & Destroyed per Event Bridge Cycle (Daily)--
 networking/     VPC, subnets, IGW, NAT Gateway, route tables
 eks/            EKS cluster, node group, IAM roles, OIDC, EBS CSI driver
-eks-infra/      AWS LBC for ingress
+eks-infra/      AWS LBC for ingress, external dns cloudflare provider
 ```
 
 ## Prerequisites
