@@ -28,6 +28,21 @@ resource "aws_cloudwatch_log_group" "codebuild" {
 }
 
 # ------------------------------------------------------------
+# AWS Secret for Token
+# ------------------------------------------------------------
+resource "aws_secretsmanager_secret" "cloudflare_api_token" {
+  name        = "cl-portfolio/cloudflare-api-token"
+  description = "Cloudflare API token for External DNS and ACM validation"
+
+  tags = local.common_tags
+}
+
+resource "aws_secretsmanager_secret_version" "cloudflare_api_token" {
+  secret_id     = aws_secretsmanager_secret.cloudflare_api_token.id
+  secret_string = var.cloudflare_api_token
+}
+
+# ------------------------------------------------------------
 # CodeBuild Project — Terraform Apply
 # ------------------------------------------------------------
 resource "aws_codebuild_project" "terraform_apply" {
@@ -69,9 +84,9 @@ resource "aws_codebuild_project" "terraform_apply" {
 
     environment_variable {
       name  = "CLOUDFLARE_API_TOKEN"
-      value = var.cloudflare_api_token
+      value = aws_secretsmanager_secret.cloudflare_api_token.name
       type  = "SECRETS_MANAGER"
-}
+    }
   }
 
   artifacts {
@@ -127,6 +142,12 @@ resource "aws_codebuild_project" "terraform_destroy" {
     environment_variable {
       name  = "PROJECT_NAME"
       value = var.project_name
+    }
+
+    environment_variable {
+      name  = "CLOUDFLARE_API_TOKEN"
+      value = aws_secretsmanager_secret.cloudflare_api_token.name
+      type  = "SECRETS_MANAGER"
     }
   }
 
