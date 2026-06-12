@@ -104,11 +104,6 @@ resource "helm_release" "external_dns" {
   }
 
   set {
-    name  = "serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
-    value = aws_iam_role.external_dns.arn
-  }
-
-  set {
     name  = "policy"
     value = "upsert-only"
   }
