@@ -15,8 +15,8 @@ phases:
       - echo "=== Starting Terraform Apply ==="
       - echo "State bucket - $TF_STATE_BUCKET"
       - echo "Region - $AWS_REGION"
-      # Verify AWS identity — confirms role assumption worked
       - aws sts get-caller-identity
+      - export TF_VAR_cloudflare_api_token=$CLOUDFLARE_API_TOKEN
 
   build:
     commands:
@@ -62,8 +62,7 @@ phases:
           -backend-config="region=$AWS_REGION" \
           -backend-config="use_lockfile=true" \
           -backend-config="encrypt=true"
-      - terraform apply -auto-approve -input=false \
-          -var="cloudflare_api_token=$CLOUDFLARE_API_TOKEN"
+      - terraform apply -auto-approve -input=false -var="cloudflare_api_token=$CLOUDFLARE_API_TOKEN"
       - cd ../../..
 
   post_build:
