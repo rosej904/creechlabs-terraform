@@ -46,11 +46,11 @@ data "terraform_remote_state" "eks" {
   }
 }
 
-data "terraform_remote_state" "dns_tls" {
+data "terraform_remote_state" "dnstls" {
   backend = "s3"
   config = {
     bucket = "${var.project_name}-tf-state-${data.aws_caller_identity.current.account_id}"
-    key    = "environments/portfolio/dns-tls/terraform.tfstate"
+    key    = "environments/portfolio/dnstls/terraform.tfstate"
     region = var.aws_region
   }
 }
