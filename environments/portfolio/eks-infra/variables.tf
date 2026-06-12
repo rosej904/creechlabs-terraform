@@ -15,3 +15,9 @@ variable "aws_lbc_version" {
   type        = string
   default     = "1.8.1"
 }
+
+variable "cloudflare_api_token" {
+  type        = string
+  description = "Cloudflare API token passed from CI/CD environment"
+  sensitive   = true
+}
