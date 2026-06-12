@@ -108,8 +108,6 @@ resource "helm_release" "external_dns" {
     value = aws_iam_role.external_dns.arn
   }
 
-  # Sync policy — upsert creates/updates records, never deletes
-  # change to "sync" if you want External DNS to also delete records
   set {
     name  = "policy"
     value = "upsert-only"

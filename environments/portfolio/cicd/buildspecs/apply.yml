@@ -62,7 +62,7 @@ phases:
           -backend-config="region=$AWS_REGION" \
           -backend-config="use_lockfile=true" \
           -backend-config="encrypt=true"
-      - terraform apply -auto-approve -input=false -var="cloudflare_api_token=$CLOUDFLARE_API_TOKEN"
+      - terraform apply -auto-approve -input=false
       - cd ../../..
 
   post_build:
