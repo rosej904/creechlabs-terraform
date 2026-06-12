@@ -16,6 +16,7 @@ phases:
       - echo "State bucket - $TF_STATE_BUCKET"
       - echo "Region - $AWS_REGION"
       - aws sts get-caller-identity
+      - export TF_VAR_cloudflare_api_token=$CLOUDFLARE_API_TOKEN
 
   build:
     commands:
