@@ -20,13 +20,31 @@ phases:
 
   build:
     commands:
-      # ----------------------------------------------------------
-      # Reverse order — EKS must go before networking
-      # ----------------------------------------------------------
+
 
       # Layer 3 — EKS Infrastructure (destroy first)
       - echo "=== Destroying EKS Infrastructure layer ==="
       - cd environments/portfolio/eks-infra
+
+      # Delete ingress to trigger LBC to delete ALBs
+      - echo "=== Deleting all Ingress resources to release ALBs ==="
+      - aws eks update-kubeconfig --region $AWS_REGION --name ${PROJECT_NAME}-cluster
+      - kubectl delete ingress --all --all-namespaces --ignore-not-found=true
+      - echo "=== Waiting for ALBs to be deleted ==="
+      - |
+        for i in $(seq 1 30); do
+          ALB_COUNT=$(aws elbv2 describe-load-balancers --query "length(LoadBalancers[?contains(LoadBalancerName, '${PROJECT_NAME}')])" --output text)
+          if [ "$ALB_COUNT" = "0" ]; then
+            echo "All ALBs deleted"
+            break
+          fi
+          echo "Still $ALB_COUNT ALB(s) remaining, waiting..."
+          sleep 10
+        done
+
+      # Wait for ALBs to actually be deleted - LBC needs time
+      - echo "=== Waiting for ALB cleanup ==="
+      - sleep 60
       - |
         terraform init -input=false \
           -backend-config="bucket=$TF_STATE_BUCKET" \

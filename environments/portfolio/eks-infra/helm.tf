@@ -89,6 +89,11 @@ resource "helm_release" "external_dns" {
   }
 
   set {
+    name  = "sources[0]"
+    value = "ingress"
+  }
+
+  set {
     name  = "domainFilters[0]"
     value = var.domain_name
   }
