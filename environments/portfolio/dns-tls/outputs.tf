@@ -1,11 +1,7 @@
-output "hosted_zone_id" {
-  description = "Route53 hosted zone ID — consumed by argocd and other layers for DNS records"
-  value       = aws_route53_zone.main.zone_id
-}
-
-output "hosted_zone_name_servers" {
-  description = "Add these 4 NS records at your registrar to delegate DNS to Route53"
-  value       = aws_route53_zone.main.name_servers
+output "cloudflare_record_ids" {
+  value = [
+    for record in cloudflare_record.acm_validation : record.id
+  ]
 }
 
 output "acm_certificate_arn" {
@@ -21,9 +17,4 @@ output "certificate_status" {
 output "domain_name" {
   description = "Primary domain name"
   value       = var.domain_name
-}
-
-output "nameserver_delegation_instructions" {
-  description = "Instructions for your registrar"
-  value       = "Go to your registrar for ${var.domain_name} and set custom nameservers to the 4 values in hosted_zone_name_servers"
 }

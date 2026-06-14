@@ -28,12 +28,26 @@ resource "aws_cloudwatch_log_group" "codebuild" {
 }
 
 # ------------------------------------------------------------
+# AWS Secret for Token
+# ------------------------------------------------------------
+resource "aws_secretsmanager_secret" "cloudflare_api_token" {
+  name        = "cl-portfolio/cloudflare-api-token"
+  description = "Cloudflare API token for External DNS and ACM validation"
+
+  tags = local.common_tags
+}
+
+resource "aws_secretsmanager_secret_version" "cloudflare_api_token" {
+  secret_id     = aws_secretsmanager_secret.cloudflare_api_token.id
+  secret_string = var.cloudflare_api_token
+}
+
+# ------------------------------------------------------------
 # CodeBuild Project — Terraform Apply
-# Runs: networking → eks (in order, with dependency awareness)
 # ------------------------------------------------------------
 resource "aws_codebuild_project" "terraform_apply" {
   name          = "${var.project_name}-terraform-apply"
-  description   = "Runs terraform apply across all portfolio infrastructure layers"
+  description   = "Runs terraform apply across all portfolio core layers"
   service_role  = aws_iam_role.codebuild_terraform.arn
   build_timeout = 60  # minutes — EKS takes ~15min
 
@@ -67,6 +81,12 @@ resource "aws_codebuild_project" "terraform_apply" {
       name  = "PROJECT_NAME"
       value = var.project_name
     }
+
+    environment_variable {
+      name  = "CLOUDFLARE_API_TOKEN"
+      value = aws_secretsmanager_secret.cloudflare_api_token.name
+      type  = "SECRETS_MANAGER"
+    }
   }
 
   artifacts {
@@ -86,11 +106,10 @@ resource "aws_codebuild_project" "terraform_apply" {
 
 # ------------------------------------------------------------
 # CodeBuild Project — Terraform Destroy
-# Runs in reverse order: eks → networking
 # ------------------------------------------------------------
 resource "aws_codebuild_project" "terraform_destroy" {
   name          = "${var.project_name}-terraform-destroy"
-  description   = "Runs terraform destroy across all portfolio infrastructure layers"
+  description   = "Runs terraform destroy across all portfolio core layers"
   service_role  = aws_iam_role.codebuild_terraform.arn
   build_timeout = 60
 
@@ -123,6 +142,12 @@ resource "aws_codebuild_project" "terraform_destroy" {
     environment_variable {
       name  = "PROJECT_NAME"
       value = var.project_name
+    }
+
+    environment_variable {
+      name  = "CLOUDFLARE_API_TOKEN"
+      value = aws_secretsmanager_secret.cloudflare_api_token.name
+      type  = "SECRETS_MANAGER"
     }
   }
 

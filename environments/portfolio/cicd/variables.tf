@@ -31,3 +31,10 @@ variable "schedules_enabled" {
   type        = bool
   default     = true
 }
+
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare api token should be gitignored in terraform.tfvars"
+  type        = string
+  default     = ""
+}

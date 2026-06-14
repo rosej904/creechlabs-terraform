@@ -11,7 +11,19 @@ variable "project_name" {
 }
 
 variable "domain_name" {
-  description = "Primary domain name — hosted zone will be created for this"
+  description = "Primary domain name"
   type        = string
-  default     = "portfolio.creechlabs.dev"
+  default     = "domain.com"
+}
+
+variable "cloudflare_api_token" {
+  description = "Cloudflare api token should be gitignored in terraform.tfvars"
+  type        = string
+  default     = ""
+}
+
+variable "cloudflare_zone_id" {
+  description = "Cloudflare zone id token may also be gitignored in terraform.tfvars"
+  type        = string
+  default     = ""
 }

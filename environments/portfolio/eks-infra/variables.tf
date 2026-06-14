@@ -15,3 +15,21 @@ variable "aws_lbc_version" {
   type        = string
   default     = "1.8.1"
 }
+
+variable "cloudflare_api_token" {
+  type        = string
+  description = "Cloudflare API token passed from CI/CD environment"
+  sensitive   = true
+}
+
+variable "domain_name" {
+  description = "Primary domain name"
+  type        = string
+  default     = "domain.com"
+}
+
+variable "external_dns_version" {
+  description = "Helm Chart latest stable version"
+  type        = string
+  default     = "1.21.1"
+}

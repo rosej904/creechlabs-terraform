@@ -15,8 +15,8 @@ phases:
       - echo "=== Starting Terraform Apply ==="
       - echo "State bucket - $TF_STATE_BUCKET"
       - echo "Region - $AWS_REGION"
-      # Verify AWS identity — confirms role assumption worked
       - aws sts get-caller-identity
+      - export TF_VAR_cloudflare_api_token=$CLOUDFLARE_API_TOKEN
 
   build:
     commands:
@@ -44,6 +44,21 @@ phases:
         terraform init -input=false \
           -backend-config="bucket=$TF_STATE_BUCKET" \
           -backend-config="key=environments/portfolio/eks/terraform.tfstate" \
+          -backend-config="region=$AWS_REGION" \
+          -backend-config="use_lockfile=true" \
+          -backend-config="encrypt=true"
+      - terraform apply -auto-approve -input=false
+      - cd ../../..
+
+      # ----------------------------------------------------------
+      # Layer 3 — EKS Infrastructure
+      # ----------------------------------------------------------
+      - echo "=== Applying EKS Infrastructure layer ==="
+      - cd environments/portfolio/eks-infra
+      - |
+        terraform init -input=false \
+          -backend-config="bucket=$TF_STATE_BUCKET" \
+          -backend-config="key=environments/portfolio/eks-infra/terraform.tfstate" \
           -backend-config="region=$AWS_REGION" \
           -backend-config="use_lockfile=true" \
           -backend-config="encrypt=true"
