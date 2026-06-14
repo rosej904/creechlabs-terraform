@@ -1,0 +1,36 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: app-of-apps
+  namespace: argocd
+  # Prevent accidental deletion of the root app via UI
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: ${github_repo_ssh_url}
+    targetRevision: ${target_revision}
+    path: argocd/apps
+    directory:
+      recurse: true
+      # Only pick up Application manifests, ignore values files etc.
+      include: "application.yaml"
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true      # remove resources when removed from git
+      selfHeal: true   # revert manual changes back to git state
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

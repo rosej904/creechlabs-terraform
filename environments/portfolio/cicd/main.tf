@@ -42,6 +42,30 @@ resource "aws_secretsmanager_secret_version" "cloudflare_api_token" {
   secret_string = var.cloudflare_api_token
 }
 
+resource "aws_secretsmanager_secret" "argocd_admin_password" {
+  name        = "cl-portfolio/argocd_admin_password"
+  description = "ArgoCD admin password"
+
+  tags = local.common_tags
+}
+
+resource "aws_secretsmanager_secret_version" "argocd_admin_password" {
+  secret_id     = aws_secretsmanager_secret.argocd_admin_password.id
+  secret_string = var.argocd_admin_password
+}
+
+resource "aws_secretsmanager_secret" "argocd_repo_ssh_private_key" {
+  name        = "cl-portfolio/argocd_repo_ssh_private_key"
+  description = "ArgoCD repo ssh private key"
+
+  tags = local.common_tags
+}
+
+resource "aws_secretsmanager_secret_version" "argocd_repo_ssh_private_key" {
+  secret_id     = aws_secretsmanager_secret.argocd_repo_ssh_private_key.id
+  secret_string = var.argocd_repo_ssh_private_key
+}
+
 # ------------------------------------------------------------
 # CodeBuild Project — Terraform Apply
 # ------------------------------------------------------------

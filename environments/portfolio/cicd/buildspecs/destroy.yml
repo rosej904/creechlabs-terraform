@@ -17,12 +17,26 @@ phases:
       - echo "Region - $AWS_REGION"
       - aws sts get-caller-identity
       - export TF_VAR_cloudflare_api_token=$CLOUDFLARE_API_TOKEN
+      - export TF_VAR_argocd_admin_password=$ARGOCD_ADMIN_PASSWORD
+      - export TF_VAR_argocd_repo_ssh_private_key=$ARGOCD_REPO_SSH_PRIVATE_KEY
 
   build:
     commands:
 
+      # Argo Layer — ArgoCD
+      - echo "=== Destroying ArgoCD layer ==="
+      - cd environments/portfolio/argocd
+      - |
+        terraform init -input=false \
+          -backend-config="bucket=$TF_STATE_BUCKET" \
+          -backend-config="key=environments/portfolio/argocd/terraform.tfstate" \
+          -backend-config="region=$AWS_REGION" \
+          -backend-config="use_lockfile=true" \
+          -backend-config="encrypt=true"
+      - terraform destroy -auto-approve -input=false
+      - cd ../../..
 
-      # Layer 3 — EKS Infrastructure (destroy first)
+      # EKS-INFRA Layer — EKS Infrastructure
       - echo "=== Destroying EKS Infrastructure layer ==="
       - cd environments/portfolio/eks-infra
 
@@ -55,7 +69,7 @@ phases:
       - terraform destroy -auto-approve -input=false
       - cd ../../..
 
-      # Layer 2 — EKS (destroy next)
+      # EKS Layer
       - echo "=== Destroying EKS layer ==="
       - cd environments/portfolio/eks
       - |
@@ -68,7 +82,7 @@ phases:
       - terraform destroy -auto-approve -input=false
       - cd ../../..
 
-      # Layer 1 — Networking (destroy last)
+      # Network Layer
       - echo "=== Destroying networking layer ==="
       - cd environments/portfolio/networking
       - |

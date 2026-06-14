@@ -38,3 +38,15 @@ variable "cloudflare_api_token" {
   type        = string
   default     = ""
 }
+
+variable "argocd_admin_password" {
+  description = "Argo CD admin password"
+  type        = string
+  default     = "password"
+}
+
+variable "argocd_repo_ssh_private_key" {
+  description = "Private ssh key for argocd repo"
+  type        = string
+  default     = "privatekey"
+}
