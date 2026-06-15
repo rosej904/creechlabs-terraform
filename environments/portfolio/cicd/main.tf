@@ -111,6 +111,18 @@ resource "aws_codebuild_project" "terraform_apply" {
       value = aws_secretsmanager_secret.cloudflare_api_token.name
       type  = "SECRETS_MANAGER"
     }
+
+    environment_variable {
+      name  = "ARGOCD_ADMIN_PASSWORD"
+      value = aws_secretsmanager_secret.argocd_admin_password.name
+      type  = "SECRETS_MANAGER"
+    }
+
+    environment_variable {
+      name  = "ARGOCD_REPO_SSH_PRIVATE_KEY"
+      value = aws_secretsmanager_secret.argocd_repo_ssh_private_key.name
+      type  = "SECRETS_MANAGER"
+    }
   }
 
   artifacts {

@@ -25,7 +25,7 @@ variable "cloudflare_api_token" {
 variable "domain_name" {
   description = "Primary domain name"
   type        = string
-  default     = "domain.com"
+  default     = "creechlabs.dev"
 }
 
 variable "external_dns_version" {
