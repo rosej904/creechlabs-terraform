@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://grafana.github.io/helm-charts
+      chart: grafana
+      targetRevision: 8.5.0
+      helm:
+        valueFiles:
+          - '$values/environments/portfolio/argocd/apps/grafana/values.yaml'
+        values: |
+          admin:
+            password: "${argocd_admin_password}"
+          ingress:
+            hosts:
+              - host: "grafana.${domain_name}"
+                paths:
+                  - path: /
+                    pathType: Prefix
+
+    - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
+      targetRevision: feature/eks-observability
+      ref: values
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
