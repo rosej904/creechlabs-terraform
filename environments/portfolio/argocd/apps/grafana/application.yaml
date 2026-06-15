@@ -19,7 +19,7 @@ spec:
             hosts:
               - "grafana.${domain_name}"
             annotations:
-              alb.ingress.kubernetes.io/certificate-arn: "${acm_certificate_arn}"
+              "alb.ingress.kubernetes.io/certificate-arn": "${acm_certificate_arn}"
 
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
       targetRevision: feature/eks-observability
