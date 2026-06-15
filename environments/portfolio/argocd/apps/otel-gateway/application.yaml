@@ -1,0 +1,31 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: otel-gateway
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: 'https://open-telemetry.github.io/opentelemetry-helm-charts'
+      chart: opentelemetry-collector
+      targetRevision: 0.153.0
+      helm:
+        valueFiles:
+          - '$values/argocd/apps/otel-gateway/values.yaml'
+
+    # Values file comes from this same repo
+    # repoURL/branch must match the SSH URL ArgoCD is configured with
+    - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
+      targetRevision: feature/eks-observability
+      ref: values
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: otel
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
