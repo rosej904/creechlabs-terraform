@@ -11,7 +11,7 @@ spec:
       targetRevision: 0.153.0
       helm:
         valueFiles:
-          - '$values/argocd/apps/otel-gateway/values.yaml'
+          - '$values/environments/portfolio/argocd/apps/otel-gateway/values.yaml'
 
     # Values file comes from this same repo
     # repoURL/branch must match the SSH URL ArgoCD is configured with
