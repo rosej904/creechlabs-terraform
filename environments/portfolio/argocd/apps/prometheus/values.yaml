@@ -1,0 +1,20 @@
+server:
+  extraArgs:
+    web.enable-remote-write-receiver: ""
+
+  persistentVolume:
+    enabled: true
+    storageClass: gp3
+    size: 5Gi
+
+alertmanager:
+  enabled: false
+
+prometheus-pushgateway:
+  enabled: false
+
+kube-state-metrics:
+  enabled: true    # gives you k8s cluster metrics
+
+nodeExporter:
+  enabled: true    # gives you node metrics
