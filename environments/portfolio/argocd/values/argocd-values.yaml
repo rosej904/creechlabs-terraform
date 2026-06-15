@@ -1,0 +1,82 @@
+# ------------------------------------------------------------
+# ArgoCD Helm values
+# ------------------------------------------------------------
+
+global:
+  domain: "argocd.${domain_name}"
+
+# ------------------------------------------------------------
+# Server config — admin password, ingress, resources
+# ------------------------------------------------------------
+configs:
+  secret:
+    argocdServerAdminPassword: "${admin_password_hash}"
+
+  params:
+    server.insecure: true  # ALB terminates TLS, traffic to pod is HTTP
+
+server:
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      kubernetes.io/ingress.class: alb
+      alb.ingress.kubernetes.io/scheme: internet-facing
+      alb.ingress.kubernetes.io/target-type: ip
+      alb.ingress.kubernetes.io/certificate-arn: "${acm_certificate_arn}"
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+      alb.ingress.kubernetes.io/ssl-redirect: '443'
+      alb.ingress.kubernetes.io/group.name: portfolio
+    hosts:
+      - "argocd.${domain_name}"
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
+
+# ------------------------------------------------------------
+# Controller — resource limits, keep small for cost
+# ------------------------------------------------------------
+controller:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
+
+# ------------------------------------------------------------
+# Repo server — needed for SSH-based git access
+# ------------------------------------------------------------
+repoServer:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
+
+applicationSet:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi
+
+redis:
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
