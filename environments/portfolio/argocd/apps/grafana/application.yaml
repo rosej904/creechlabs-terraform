@@ -17,7 +17,7 @@ spec:
             password: "${argocd_admin_password}"
           ingress:
             hosts:
-              - host: "grafana.${domain_name}"
+              - "grafana.${domain_name}"
             annotations:
               alb.ingress.kubernetes.io/certificate-arn: "${acm_certificate_arn}"
 
