@@ -335,7 +335,10 @@ resource "aws_eks_node_group" "main" {
     aws_iam_role_policy_attachment.eks_ecr_readonly,
   ]
 
-  tags = local.common_tags
+  tags = merge(local.common_tags, {
+    "k8s.io/cluster-autoscaler/enabled"                     = "true"
+    "k8s.io/cluster-autoscaler/${var.project_name}-cluster" = "owned"
+  })
 
   # Allow nodes to be replaced on update
   lifecycle {
