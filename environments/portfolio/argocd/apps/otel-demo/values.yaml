@@ -12,7 +12,7 @@ opentelemetry-collector:
 default:
   envOverrides:
     - name: OTEL_EXPORTER_OTLP_ENDPOINT
-      value: "http://tempo.observability.svc.cluster.local:4317"
+      value: "http://otel-gateway-opentelemetry-collector.observability.svc.cluster.local:4317"
     - name: OTEL_LOGS_EXPORTER
       value: "none"
 

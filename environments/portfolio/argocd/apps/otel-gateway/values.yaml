@@ -31,7 +31,7 @@ replicaCount: 1  # keep at 1 for portfolio cost
 config:
   exporters:
     prometheusremotewrite:
-      endpoint: "http://prometheus-server.observability.svc.cluster.local:9090/api/v1/write"
+      endpoint: "http://prometheus-server.observability.svc.cluster.local/api/v1/write"
       resource_to_telemetry_conversion:
         enabled: true
     otlp/tempo:
