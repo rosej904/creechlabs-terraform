@@ -6,30 +6,15 @@ jaeger:
   enabled: false
 opensearch:
   enabled: false
-
 opentelemetry-collector:
-  config:
-    exporters:
-      otlp/tempo:
-        endpoint: tempo.observability.svc.cluster.local:4317
-        tls:
-          insecure: true
+  enabled: false
 
-    otlp/loki:
-        endpoint: loki.observability.svc.cluster.local:3100
-        tls:
-          insecure: true
-
-    service:
-      pipelines:
-        traces:
-          receivers: [otlp]
-          processors: [memory_limiter, batch]
-          exporters: [otlp/tempo]
-        logs:
-          receivers: [otlp]
-          processors: [memory_limiter, batch]
-          exporters: [otlp/loki]
+default:
+  envOverrides:
+    - name: OTEL_EXPORTER_OTLP_ENDPOINT
+      value: "http://tempo.observability.svc.cluster.local:4317"
+    - name: OTEL_LOGS_EXPORTER
+      value: "none"
 
 components:
   frontend:
