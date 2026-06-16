@@ -39,6 +39,8 @@ datasources:
         type: tempo
         access: proxy
         url: http://tempo.observability.svc.cluster.local:3200
+        jsonData:
+          grpcAddress: "tempo.observability.svc.cluster.local:4317"
 
 resources:
   requests:
