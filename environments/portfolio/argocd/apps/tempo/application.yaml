@@ -1,19 +1,18 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: grafana
+  name: prometheus
   namespace: argocd
 spec:
   project: default
   sources:
     - repoURL: https://grafana-community.github.io/helm-charts
-      chart: grafana
-      targetRevision: 12.3.0
+      chart: tempo
+      targetRevision: 2.1.0
       helm:
         valueFiles:
-          - '$values/environments/portfolio/argocd/apps/grafana/values.yaml'
+          - '$values/environments/portfolio/argocd/apps/tempo/values.yaml'
 
-    # Values file comes from this same repo
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
       targetRevision: feature/eks-observability
       ref: values

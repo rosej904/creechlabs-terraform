@@ -17,7 +17,7 @@ phases:
       - echo "Region - $AWS_REGION"
       - aws sts get-caller-identity
       - export TF_VAR_cloudflare_api_token=$CLOUDFLARE_API_TOKEN
-      - export TF_VAR_argocd_admin_password=$ARGOCD_ADMIN_PASSWORD
+      - export TF_VAR_ui_admin_password=$UI_ADMIN_PASSWORD
       - export TF_VAR_argocd_repo_ssh_private_key=$ARGOCD_REPO_SSH_PRIVATE_KEY
 
   build:

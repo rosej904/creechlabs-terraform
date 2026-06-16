@@ -1,0 +1,53 @@
+tempo:
+  repository: grafana/tempo
+
+  storage:
+    trace:
+      backend: local
+      local:
+        path: /var/tempo/traces
+      wal:
+        path: /var/tempo/wal
+
+  metricsGenerator:
+    enabled: true
+    remoteWriteUrl: "http://prometheus-server.my-grafana.svc.cluster.local/api/v1/write"
+    serviceGraphs:
+      enabled: true
+    spanMetrics:
+      enabled: true
+    registry:
+      external_labels:
+        source: tempo
+        cluster: cl-portfolio-cluster
+    storage:
+      path: /var/tempo/generator
+  
+  overrides:
+    defaults:
+      metrics_generator:
+        processors:
+          - service-graphs
+          - span-metrics
+
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClass: gp3
+
+service:
+  type: ClusterIP
+  ports:
+    - name: otlp-grpc
+      port: 4317
+      targetPort: 4317
+    - name: otlp-http
+      port: 4318
+      targetPort: 4318
+    - name: http-metrics
+      port: 3100
+      targetPort: 3100
+
+# Optional: Disable components you don't need to keep the lab lean
+gateway:
+  enabled: false

@@ -25,7 +25,7 @@ GitHub repo → Settings → Deploy keys → Add deploy key
 
 ```hcl
 github_repo_ssh_url         = "git@github.com:YOUR_USERNAME/YOUR_REPO.git"
-argocd_admin_password = "your-chosen-password"
+ui_admin_password = "your-chosen-password"
 ```
 export TF_VAR_argocd_repo_ssh_private_key=$(cat /path/to/your/id_rsa)
 
@@ -33,7 +33,7 @@ export TF_VAR_argocd_repo_ssh_private_key=$(cat /path/to/your/id_rsa)
 
 ```bash
 aws secretsmanager create-secret \
-  --name "cl-portfolio/argocd_admin_password" \
+  --name "cl-portfolio/ui_admin_password" \
   --secret-string "your-chosen-password"
 
 aws secretsmanager create-secret \
@@ -42,7 +42,7 @@ aws secretsmanager create-secret \
 ```
 
 Then add to `cicd/main.tf` CodeBuild environment variables (SECRETS_MANAGER type)
-and export as `TF_VAR_argocd_admin_password` / `TF_VAR_argocd_repo_ssh_private_key`
+and export as `TF_VAR_ui_admin_password` / `TF_VAR_argocd_repo_ssh_private_key`
 in the buildspec pre_build phase.
 
 ---
@@ -74,7 +74,7 @@ kubectl get applications -n argocd
 https://argocd.creechlabs.dev
 
 Username: admin
-Password: <value from argocd_admin_password>
+Password: <value from ui_admin_password>
 ```
 
 ## CLI login (optional)

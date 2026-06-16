@@ -1,3 +1,11 @@
+admin:
+  existingSecret: "grafana-admin-credentials"
+  userKey: admin-user
+  passwordKey: admin-password
+
+persistence:
+  enabled: false
+
 ingress:
   enabled: true
   ingressClassName: alb
@@ -5,9 +13,12 @@ ingress:
     kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:445606683808:certificate/bced14e9-9cc5-49f1-b1fa-f762b4de535a"
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
     alb.ingress.kubernetes.io/ssl-redirect: '443'
     alb.ingress.kubernetes.io/group.name: portfolio
+  hosts:
+    - grafana.creechlabs.dev
 
 datasources:
   datasources.yaml:
@@ -18,7 +29,21 @@ datasources:
         access: proxy
         url: http://prometheus-server.observability.svc.cluster.local
         isDefault: true
+
       - name: Loki
         type: loki
         access: proxy
-        url: http://loki.observability.svc.cluster.local
+        url: http://loki.observability.svc.cluster.local:3100
+
+      - name: Tempo
+        type: tempo
+        access: proxy
+        url: http://tempo.observability.svc.cluster.local:3200
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi

@@ -22,7 +22,7 @@ variable "argocd_chart_version" {
   default     = "9.5.21"
 }
 
-variable "argocd_admin_password" {
+variable "ui_admin_password" {
   description = "Argo CD admin password"
   type        = string
   default     = "password"
