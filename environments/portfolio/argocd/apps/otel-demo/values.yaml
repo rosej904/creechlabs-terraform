@@ -1,13 +1,44 @@
+prometheus:
+  enabled: false
+grafana:
+  enabled: false
+jaeger:
+  enabled: false
+opensearch:
+  enabled: false
+
+observability:
+  prometheus:
+    enabled: false
+  jaeger:
+    enabled: false
+  metrics:
+    features:
+      spanMetrics: false
+
 opentelemetry-collector:
   config:
     exporters:
-      otlphttp/example:
-        endpoint: http://otel-gateway-opentelemetry-collector.observability.svc.cluster.local:4318
+      otlp/tempo:
+        endpoint: tempo.observability.svc.cluster.local:4317
+        tls:
+          insecure: true
+
+    otlp/loki:
+        endpoint: loki.observability.svc.cluster.local:3100
+        tls:
+          insecure: true
 
     service:
       pipelines:
         traces:
-          exporters: [spanmetrics, otlphttp/example]
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp/tempo]
+        logs:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp/loki]
 
 components:
   frontend:
