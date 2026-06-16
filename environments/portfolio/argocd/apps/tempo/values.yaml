@@ -22,10 +22,6 @@ tempo:
         cluster: cl-portfolio-cluster
     storage:
       path: /var/tempo/generator
-  
-  structuredConfig:
-    query_frontend:
-      stream_over_http_enabled: true
 
   overrides:
     defaults:
