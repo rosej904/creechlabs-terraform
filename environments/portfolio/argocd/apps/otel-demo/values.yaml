@@ -7,15 +7,6 @@ jaeger:
 opensearch:
   enabled: false
 
-observability:
-  prometheus:
-    enabled: false
-  jaeger:
-    enabled: false
-  metrics:
-    features:
-      spanMetrics: false
-
 opentelemetry-collector:
   config:
     exporters:
