@@ -126,3 +126,56 @@ resource "helm_release" "external_dns" {
     kubernetes_secret.cloudflare_token
   ]
 }
+
+# ------------------------------------------------------------
+# Cluster Autoscaler
+# ------------------------------------------------------------
+
+resource "helm_release" "cluster_autoscaler" {
+  name       = "cluster-autoscaler"
+  repository = "https://kubernetes.github.io/autoscaler"
+  chart      = "cluster-autoscaler"
+  namespace  = "kube-system"
+  version    = "9.43.2"
+
+  set {
+    name  = "autoDiscovery.clusterName"
+    value = data.terraform_remote_state.eks.outputs.cluster_name
+  }
+
+  set {
+    name  = "awsRegion"
+    value = var.aws_region
+  }
+
+  set {
+    name  = "rbac.serviceAccount.create"
+    value = "true"
+  }
+
+  set {
+    name  = "rbac.serviceAccount.name"
+    value = "cluster-autoscaler"
+  }
+
+  set {
+    name  = "rbac.serviceAccount.annotations.eks\\.amazonaws\\.com/role-arn"
+    value = aws_iam_role.cluster_autoscaler.arn
+  }
+
+  # Scale down unneeded nodes after 2 minutes (faster for demo cycles)
+  set {
+    name  = "extraArgs.scale-down-delay-after-add"
+    value = "2m"
+  }
+
+  set {
+    name  = "extraArgs.scale-down-unneeded-time"
+    value = "2m"
+  }
+
+  wait    = true
+  timeout = 300
+
+  depends_on = [aws_iam_role_policy_attachment.cluster_autoscaler]
+}
