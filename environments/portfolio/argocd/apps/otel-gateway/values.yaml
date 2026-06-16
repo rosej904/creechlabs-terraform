@@ -60,7 +60,19 @@ config:
       check_interval: 1s
       limit_percentage: 75
       spike_limit_percentage: 15
-    k8sattributes: {}
+    k8sattributes:
+      auth_type: "kubeConfig"
+      passthrough: false
+      filter:
+        node_from_env_var: K8S_NODE_NAME
+      extract:
+        metadata:
+          - k8s.pod.name
+          - k8s.pod.namespace
+          - k8s.node.name
+        labels:
+          - tag_name: app.kubernetes.io/name
+            key: app.kubernetes.io/name
 
   service:
     pipelines:
@@ -70,5 +82,5 @@ config:
         exporters: [otlp/tempo]
       metrics:
         receivers: [otlp]
-        processors: [batch]
+        processors: [memory_limiter, k8sattributes, batch]
         exporters: [prometheusremotewrite]
