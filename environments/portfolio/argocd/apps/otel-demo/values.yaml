@@ -32,4 +32,8 @@ components:
         alb.ingress.kubernetes.io/ssl-redirect: '443'
         alb.ingress.kubernetes.io/group.name: portfolio
       hosts:
-        - otel-demo.creechlabs.dev
+        - host: otel-demo.creechlabs.dev
+          paths:
+            - path: /
+              pathType: Prefix
+              port: 8080
