@@ -48,6 +48,5 @@ service:
       port: 3100
       targetPort: 3100
 
-# Optional: Disable components you don't need to keep the lab lean
 gateway:
   enabled: false
