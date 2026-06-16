@@ -23,6 +23,10 @@ tempo:
     storage:
       path: /var/tempo/generator
   
+  structuredConfig:
+    query_frontend:
+      stream_over_http_enabled: true
+
   overrides:
     defaults:
       metrics_generator:
