@@ -65,8 +65,10 @@ config:
       passthrough: false
       extract:
         metadata:
+          - k8s.container.name
           - k8s.pod.name
-          - k8s.pod.namespace
+          - k8s.deployment.name
+          - k8s.namespace.name
           - k8s.node.name
         labels:
           - tag_name: app.kubernetes.io/name
