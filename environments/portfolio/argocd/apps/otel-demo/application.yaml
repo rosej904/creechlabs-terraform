@@ -11,7 +11,7 @@ spec:
       targetRevision: 0.40.7
       helm:
         valueFiles:
-          - '$values/environments/portfolio/argocd/apps/otel-demo/values.yaml'
+          - '$values/apps/otel-demo/values.yaml'
 
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
       targetRevision: feature/eks-observability
