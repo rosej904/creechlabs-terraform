@@ -61,14 +61,13 @@ datasources:
                 value: service_name
           tracesToMetrics:
             datasourceUid: Prometheus
-            spanStartTimeShift: '-2m'
-            spanEndTimeShift: '2m'
-            tags:
-              - key: service.name
-                value: service_name
+            spanTimer:
+              metric: 'http_server_request_duration_seconds_count'
             queries:
-              - name: Request Duration
-                query: 'http_server_duration_milliseconds'
+            - name: 'Request Duration (Heatmap)'
+              query: 'sum(rate(http_server_request_duration_seconds_bucket{$__tags}[5m])) by (le)'
+            - name: 'Average Latency'
+              query: 'sum(rate(http_server_request_duration_seconds_sum{$__tags}[5m])) / sum(rate(http_server_request_duration_seconds_count{$__tags}[5m])) * 1000'
 
 resources:
   requests:
