@@ -38,10 +38,10 @@ datasources:
           derivedFields:
             - name: TraceID
               type: regex
-              matcherType: label
-              matcherRegex: '(?:"traceid"|"trace_id")\s*:\s*"(\w+)"'
-              url: '${__value.raw}'
-              datasourceUid: Tempo
+              matcherRegex: '(?i)(?:trace_id|traceid|oteltraceid)["\s:]+(\w+)'
+              internalLink:
+                datasourceUid: Tempo
+                label: "View Trace in Tempo"
 
       - name: Tempo
         type: tempo
@@ -57,8 +57,10 @@ datasources:
             filterBySpanID: true
             customQuery: false
             tags:
-              - key: service.name
-                value: service_name
+              - key: 'service.name'
+                value: 'service_name'
+              - key: 'k8s.deployment.name'
+                value: 'k8s_deployment_name'
           tracesToMetrics:
             datasourceUid: Prometheus
             spanTimer:
