@@ -38,6 +38,10 @@ config:
       endpoint: tempo.observability.svc.cluster.local:4317
       tls:
         insecure: true
+    otlphttp/loki:
+      endpoint: "http://loki.observability.svc.cluster.local:3100/otlp"
+      tls:
+        insecure: true
 
   receivers:
     otlp:
@@ -84,3 +88,7 @@ config:
         receivers: [otlp]
         processors: [memory_limiter, k8sattributes, batch]
         exporters: [prometheusremotewrite]
+      logs:
+        receivers: [otlp]
+        processors: [memory_limiter, k8sattributes, batch]
+        exporters: [otlphttp/loki]
