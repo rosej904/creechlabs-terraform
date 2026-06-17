@@ -38,7 +38,7 @@ datasources:
           derivedFields:
             - name: TraceID
               type: regex
-              matcherRegex: '(?i)(?:trace_id|traceid|oteltraceid)["\s:]+(\w+)'
+              matcherRegex: '(?:trace_id|traceid|otelTraceId|oteltraceid)["\s:]+([a-zA-Z0-9]+)'
               internalLink:
                 datasourceUid: Tempo
                 label: "View Trace in Tempo"
