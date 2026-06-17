@@ -2,6 +2,12 @@
 config:
   filters: |
     [FILTER]
+        Name                  multiline
+        Match                 kube.*
+        Multiline.Key_Content log
+        Multiline.Parser      go, java, python, multiline_json
+
+    [FILTER]
         Name                kubernetes
         Match               kube.*
         Kube_CA_File        /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
