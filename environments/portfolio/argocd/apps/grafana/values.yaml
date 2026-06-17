@@ -65,9 +65,10 @@ datasources:
               metric: 'http_server_request_duration_seconds_count'
             queries:
             - name: 'Request Duration (Heatmap)'
-              query: 'sum(rate(http_server_request_duration_seconds_bucket{service_name=~"($service_name|.+)"}[5m])) by (le)'
+              query: 'sum(rate(http_server_request_duration_seconds_bucket{service_name=~"($service_name|.+)"}[5m])) by (le, service_name)'
             - name: 'Average Latency'
-              query: 'sum(rate(http_server_request_duration_seconds_sum{service_name=~"($service_name|.+}[5m])) / sum(rate(http_server_request_duration_seconds_count{service_name=~"($service_name|.+}[5m])) * 1000'
+              query: 'sum(rate(http_server_request_duration_seconds_sum{service_name=~"($service_name|.+)"}[5m])) by (service_name) / sum(rate(http_server_request_duration_seconds_count{service_name=~"($service_name|.+)"}[5m])) by (service_name) * 1000'
+              
 
 resources:
   requests:
