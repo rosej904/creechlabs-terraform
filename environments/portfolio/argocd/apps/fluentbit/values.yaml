@@ -5,7 +5,7 @@ config:
         Name                  multiline
         Match                 kube.*
         Multiline.Key_Content log
-        Multiline.Parser      go, java, python, multiline_json
+        Multiline.Parser      go, java, python
 
     [FILTER]
         Name                kubernetes
