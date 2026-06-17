@@ -32,11 +32,11 @@ server:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
       cpu: 100m
       memory: 256Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
 
 # ------------------------------------------------------------
 # Controller — resource limits, keep small for cost
@@ -44,11 +44,11 @@ server:
 controller:
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 250m
+      cpu: 200m
       memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1024Mi
 
 # ------------------------------------------------------------
 # Repo server — needed for SSH-based git access
@@ -57,26 +57,26 @@ repoServer:
   replicas: 1
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      cpu: 100m
+      cpu: 200m
       memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
 
 applicationSet:
   resources:
     requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
       cpu: 100m
       memory: 256Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
 
 redis:
   resources:
     requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
       cpu: 100m
-      memory: 128Mi
+      memory: 256Mi
+    limits:
+      cpu: 250m
+      memory: 512Mi
