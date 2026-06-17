@@ -1,5 +1,6 @@
 server:
-  enableRemoteWriteReceiver: true
+  extraArgs:
+    web.enable-remote-write-receiver: ""
 
   persistentVolume:
     enabled: true
