@@ -41,7 +41,7 @@ datasources:
               matcherType: label
               matcherRegex: '(?:"traceid"|"trace_id")\s*:\s*"(\w+)"'
               url: '${__value.raw}'
-              datasourceUid: tempo
+              datasourceUid: Tempo
 
       - name: Tempo
         type: tempo
@@ -50,7 +50,7 @@ datasources:
         jsonData:
           httpMethod: GET
           tracesToLogsV2:
-            datasourceUid: loki
+            datasourceUid: Loki
             spanStartTimeShift: '-2m'
             spanEndTimeShift: '2m'
             filterByTraceID: true
@@ -60,7 +60,7 @@ datasources:
               - key: service.name
                 value: service_name
           tracesToMetrics:
-            datasourceUid: prometheus
+            datasourceUid: Prometheus
             spanStartTimeShift: '-2m'
             spanEndTimeShift: '2m'
             tags:
