@@ -34,11 +34,41 @@ datasources:
         type: loki
         access: proxy
         url: http://loki.observability.svc.cluster.local:3100
+        jsonData:
+          derivedFields:
+            - name: TraceID
+              type: regex
+              matcherType: label
+              matcherRegex: '(?:"traceid"|"trace_id")\s*:\s*"(\w+)"'
+              url: '${__value.raw}'
+              datasourceUid: tempo
 
       - name: Tempo
         type: tempo
         access: proxy
         url: http://tempo.observability.svc.cluster.local:3200
+        jsonData:
+          httpMethod: GET
+          tracesToLogsV2:
+            datasourceUid: loki
+            spanStartTimeShift: '-2m'
+            spanEndTimeShift: '2m'
+            filterByTraceID: true
+            filterBySpanID: true
+            customQuery: false
+            tags:
+              - key: service.name
+                value: service_name
+          tracesToMetrics:
+            datasourceUid: prometheus
+            spanStartTimeShift: '-2m'
+            spanEndTimeShift: '2m'
+            tags:
+              - key: service.name
+                value: service_name
+            queries:
+              - name: Request Duration
+                query: 'http_server_duration_milliseconds'
 
 resources:
   requests:
