@@ -81,14 +81,7 @@ config:
       actions:
         - action: insert
           key: loki.resource.labels
-          value: k8s.namespace.name, k8s.pod.name, k8s.deployment.name, kubernetes.namespace_name, kubernetes.pod_name, kubernetes.deployment_name
-    transform/normalize_fluentbit:
-      error_mode: ignore
-      log_statements:
-        - context: log
-          statements:
-            - set(resource.attributes["k8s.namespace.name"], cache["kubernetes"]["namespace_name"]) where cache["kubernetes"]["namespace_name"] != nil
-            - set(resource.attributes["k8s.pod.name"], cache["kubernetes"]["pod_name"]) where cache["kubernetes"]["pod_name"] != nil
+          value: k8s.namespace.name, k8s.pod.name, k8s.deployment.name
 
   service:
     pipelines:
@@ -102,5 +95,5 @@ config:
         exporters: [prometheusremotewrite]
       logs:
         receivers: [otlp]
-        processors: [memory_limiter, k8sattributes, transform/normalize_fluentbit, attributes/loki_hints, batch]
+        processors: [memory_limiter, k8sattributes, attributes/loki_hints, batch]
         exporters: [otlphttp/loki]
