@@ -13,9 +13,8 @@ spec:
         valueFiles:
           - '$values/environments/portfolio/argocd/apps/grafana/values.yaml'
 
-    # Values file comes from this same repo
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: feature/eks-observability
+      targetRevision: main
       ref: values
 
   destination:

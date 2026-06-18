@@ -14,7 +14,7 @@ spec:
           - '$values/environments/portfolio/argocd/apps/tempo/values.yaml'
 
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: HEAD
+      targetRevision: main
       ref: values
 
   destination:
