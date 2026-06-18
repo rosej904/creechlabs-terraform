@@ -41,7 +41,7 @@ datasources:
             - name: TraceID
               matcherType: label
               matcherRegex: trace_id
-              url: '${__value.raw}'
+              url: 'traceId = "${__value.raw}"'
               datasourceUid: tempo
 
       - name: Tempo
