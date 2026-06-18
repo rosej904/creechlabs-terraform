@@ -22,7 +22,13 @@ prometheus-pushgateway:
   enabled: false
 
 kube-state-metrics:
-  enabled: true    # gives you k8s cluster metrics
+  enabled: true
 
 nodeExporter:
-  enabled: true    # gives you node metrics
+  enabled: true
+
+kubelet:
+  enabled: true
+
+kubeProxy:
+  enabled: true

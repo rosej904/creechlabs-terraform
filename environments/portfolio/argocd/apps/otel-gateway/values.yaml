@@ -85,7 +85,7 @@ config:
         processors: [memory_limiter, k8sattributes, batch]
         exporters: [otlp/tempo]
       metrics:
-        receivers: [otlp]
+        receivers: [otlp, prometheus]
         processors: [memory_limiter, k8sattributes, batch]
         exporters: [prometheusremotewrite]
       logs:
