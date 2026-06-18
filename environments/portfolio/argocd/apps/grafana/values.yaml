@@ -38,18 +38,12 @@ datasources:
         url: http://loki.observability.svc.cluster.local:3100
         jsonData:
           derivedFields:
-            - name: TraceID-label
+            - name: TraceID
               matcherType: label
               matcherRegex: trace_id
-              url: '${__value.raw}'
               datasourceUid: tempo
               internalLink: true
-            - name: TraceID-log
-              type: regex
-              matcherRegex: '(?:trace_id|traceid|otelTraceId|oteltraceid)[":\s]+([a-zA-Z0-9]+)'
-              url: '${__value.raw}'
-              datasourceUid: tempo
-              internalLink: true
+
 
       - name: Tempo
         type: tempo
