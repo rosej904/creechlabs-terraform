@@ -14,7 +14,7 @@ spec:
           - '$values/environments/portfolio/argocd/apps/prometheus/values.yaml'
 
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: feature/eks-observability
+      targetRevision: main
       ref: values
 
   destination:

@@ -44,11 +44,27 @@ phases:
       - echo "=== Deleting all Ingress resources to release ALBs ==="
       - aws eks update-kubeconfig --region $AWS_REGION --name ${PROJECT_NAME}-cluster
       - kubectl delete ingress --all --all-namespaces --ignore-not-found=true
+
+      - |
+        kubectl get services --all-namespaces \
+          --field-selector spec.type=LoadBalancer \
+          -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' | \
+        while read ns name; do
+          echo "Deleting LoadBalancer service $name in $ns"
+          kubectl delete service $name -n $ns --ignore-not-found=true
+        done
+        
       - echo "=== Waiting for ALBs to be deleted ==="
       - |
+        # Get VPC ID from the cluster
+        VPC_ID=$(aws eks describe-cluster \
+          --name ${PROJECT_NAME}-cluster \
+          --query "cluster.resourcesVpcConfig.vpcId" \
+          --output text)
+
         for i in $(seq 1 30); do
-          ALB_COUNT=$(aws elbv2 describe-load-balancers --query "length(LoadBalancers[?contains(LoadBalancerName, '${PROJECT_NAME}')])" --output text)
-          if [ "$ALB_COUNT" = "0" ]; then
+          ALB_COUNT=$(aws elbv2 describe-load-balancers --query "length(LoadBalancers[?VpcId==\`${VPC_ID}\`])" --output text)
+          if [ "$ALB_COUNT" = "0" ] || [ -z "$ALB_COUNT" ] || [ "$ALB_COUNT" = "None" ]; then
             echo "All ALBs deleted"
             break
           fi
@@ -58,7 +74,7 @@ phases:
 
       # Wait for ALBs to actually be deleted - LBC needs time
       - echo "=== Waiting for ALB cleanup ==="
-      - sleep 60
+      - sleep 90
       - |
         terraform init -input=false \
           -backend-config="bucket=$TF_STATE_BUCKET" \
