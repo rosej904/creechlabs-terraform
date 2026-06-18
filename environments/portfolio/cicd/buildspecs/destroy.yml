@@ -44,6 +44,16 @@ phases:
       - echo "=== Deleting all Ingress resources to release ALBs ==="
       - aws eks update-kubeconfig --region $AWS_REGION --name ${PROJECT_NAME}-cluster
       - kubectl delete ingress --all --all-namespaces --ignore-not-found=true
+
+      - |
+        kubectl get services --all-namespaces \
+          --field-selector spec.type=LoadBalancer \
+          -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}' | \
+        while read ns name; do
+          echo "Deleting LoadBalancer service $name in $ns"
+          kubectl delete service $name -n $ns --ignore-not-found=true
+        done
+        
       - echo "=== Waiting for ALBs to be deleted ==="
       - |
         # Get VPC ID from the cluster
