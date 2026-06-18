@@ -43,7 +43,6 @@ phases:
       # Delete ingress to trigger LBC to delete ALBs
       - echo "=== Deleting all Ingress resources to release ALBs ==="
       - aws eks update-kubeconfig --region $AWS_REGION --name ${PROJECT_NAME}-cluster
-      - kubectl auth can-i delete ingress --all-namespaces || echo "WARNING: No cluster access, ingresses may not be deleted"
       - kubectl delete ingress --all --all-namespaces --ignore-not-found=true
       - echo "=== Waiting for ALBs to be deleted ==="
       - |
