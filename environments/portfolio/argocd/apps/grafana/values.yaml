@@ -39,8 +39,8 @@ datasources:
         jsonData:
           derivedFields:
             - name: TraceID-label
-              type: label           # ← reads from labels/structured metadata, not raw line
-              matcherRegex: trace_id   # ← the label name to extract
+              matcherType: label
+              matcherRegex: trace_id
               url: '${__value.raw}'
               datasourceUid: tempo
               internalLink: true
