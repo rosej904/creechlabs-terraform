@@ -8,6 +8,12 @@ persistence:
 
 loki:
   auth_enabled: false
+  distributor:
+    otlp_config:
+      default_resource_attributes_as_index_labels: 
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.deployment.name
   commonConfig:
     replication_factor: 1
     path_prefix: /var/loki
