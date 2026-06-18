@@ -38,7 +38,13 @@ datasources:
         url: http://loki.observability.svc.cluster.local:3100
         jsonData:
           derivedFields:
-            - name: TraceID
+            - name: TraceID-label
+              type: label           # ← reads from labels/structured metadata, not raw line
+              matcherRegex: trace_id   # ← the label name to extract
+              url: '${__value.raw}'
+              datasourceUid: tempo
+              internalLink: true
+            - name: TraceID-log
               type: regex
               matcherRegex: '(?:trace_id|traceid|otelTraceId|oteltraceid)[":\s]+([a-zA-Z0-9]+)'
               url: '${__value.raw}'
