@@ -51,6 +51,8 @@ datasources:
         url: http://tempo.observability.svc.cluster.local:3200
         jsonData:
           httpMethod: GET
+          serviceMap:
+            datasourceUid: prometheus
           tracesToLogsV2:
             datasourceUid: loki
             spanStartTimeShift: '-2m'
