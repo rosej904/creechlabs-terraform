@@ -29,6 +29,7 @@ tempo:
         processors:
           - service-graphs
           - span-metrics
+          - local-blocks
 
 persistence:
   enabled: true
