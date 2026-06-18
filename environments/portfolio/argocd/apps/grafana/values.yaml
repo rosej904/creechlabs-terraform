@@ -42,7 +42,6 @@ datasources:
               matcherType: label
               matcherRegex: trace_id
               datasourceUid: tempo
-              url: '${__value.raw}'
               internalLink: true
 
       - name: Tempo
