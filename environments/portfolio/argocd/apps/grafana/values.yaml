@@ -26,31 +26,34 @@ datasources:
     datasources:
       - name: Prometheus
         type: prometheus
+        uid: prometheus
         access: proxy
         url: http://prometheus-server.observability.svc.cluster.local
         isDefault: true
 
       - name: Loki
         type: loki
+        uid: loki
         access: proxy
         url: http://loki.observability.svc.cluster.local:3100
         jsonData:
           derivedFields:
             - name: TraceID
               type: regex
-              matcherRegex: '(?:trace_id|traceid|otelTraceId|oteltraceid)["\s:]+([a-zA-Z0-9]+)'
-              internalLink:
-                datasourceUid: Tempo
-                label: "View Trace in Tempo"
+              matcherRegex: '(?:trace_id|traceid|otelTraceId|oteltraceid)[":\s]+([a-zA-Z0-9]+)'
+              url: '${__value.raw}'
+              datasourceUid: tempo
+              internalLink: true
 
       - name: Tempo
         type: tempo
+        uid: tempo
         access: proxy
         url: http://tempo.observability.svc.cluster.local:3200
         jsonData:
           httpMethod: GET
           tracesToLogsV2:
-            datasourceUid: Loki
+            datasourceUid: loki
             spanStartTimeShift: '-2m'
             spanEndTimeShift: '2m'
             filterByTraceID: true
@@ -62,7 +65,7 @@ datasources:
               - key: 'k8s.deployment.name'
                 value: 'k8s_deployment_name'
           tracesToMetrics:
-            datasourceUid: Prometheus
+            datasourceUid: prometheus
             spanTimer:
               metric: 'http_server_request_duration_seconds_count'
             queries:
