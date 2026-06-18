@@ -13,8 +13,8 @@ spec:
         valueFiles:
           - '$values/environments/portfolio/argocd/apps/tempo/values.yaml'
 
-    - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: feature/eks-observability
+    - repoURL: ${github_repo_ssh_url}
+      targetRevision: ${target_revision}
       ref: values
 
   destination:
