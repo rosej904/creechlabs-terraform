@@ -77,6 +77,11 @@ config:
         labels:
           - tag_name: app.kubernetes.io/name
             key: app.kubernetes.io/name
+    attributes/loki_hints:
+      actions:
+        - action: insert
+          key: loki.resource.labels
+          value: k8s.namespace.name, k8s.pod.name, k8s.deployment.name
 
   service:
     pipelines:
@@ -90,5 +95,5 @@ config:
         exporters: [prometheusremotewrite]
       logs:
         receivers: [otlp]
-        processors: [memory_limiter, k8sattributes, batch]
+        processors: [memory_limiter, k8sattributes, attributes/loki_hints, batch]
         exporters: [otlphttp/loki]

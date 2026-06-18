@@ -1,4 +1,3 @@
-# Essential filters to make logs searchable in Grafana
 config:
   filters: |
     [FILTER]
@@ -18,7 +17,6 @@ config:
         K8S-Logging.Parser  On
         K8S-Logging.Exclude Off
 
-  # Output to Loki service
   outputs: |
     [OUTPUT]
         Name        loki
