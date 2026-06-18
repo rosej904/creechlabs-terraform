@@ -12,11 +12,11 @@ spec:
   source:
     repoURL: ${github_repo_ssh_url}
     targetRevision: ${target_revision}
-    path: argocd/apps
+    path: environments/portfolio/argocd/apps
     directory:
       recurse: true
       # Only pick up Application manifests, ignore values files etc.
-      include: "application.yaml"
+      include: "*/application.yaml"
 
   destination:
     server: https://kubernetes.default.svc
@@ -24,8 +24,8 @@ spec:
 
   syncPolicy:
     automated:
-      prune: true      # remove resources when removed from git
-      selfHeal: true   # revert manual changes back to git state
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
     retry:

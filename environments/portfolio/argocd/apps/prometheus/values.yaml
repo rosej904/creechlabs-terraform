@@ -1,0 +1,34 @@
+server:
+  extraArgs:
+    web.enable-remote-write-receiver: ""
+
+  persistentVolume:
+    enabled: true
+    storageClass: gp3
+    size: 5Gi
+
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+
+alertmanager:
+  enabled: false
+
+prometheus-pushgateway:
+  enabled: false
+
+kube-state-metrics:
+  enabled: true
+
+nodeExporter:
+  enabled: true
+
+kubelet:
+  enabled: true
+
+kubeProxy:
+  enabled: true

@@ -1,0 +1,45 @@
+prometheus:
+  enabled: false
+grafana:
+  enabled: false
+jaeger:
+  enabled: false
+opensearch:
+  enabled: false
+opentelemetry-collector:
+  enabled: false
+  endpoint: "otel-gateway-opentelemetry-collector.observability.svc.cluster.local:4317"
+
+default:
+  envOverrides:
+    - name: OTEL_COLLECTOR_NAME
+      value: "otel-gateway-opentelemetry-collector.observability.svc.cluster.local"
+    - name: OTEL_METRICS_EXPORTER
+      value: "otlp"
+
+components:
+  frontend:
+    envOverrides:
+      - name: PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
+        value: http://otel-gateway-opentelemetry-collector.observability.svc.cluster.local:4318/v1/traces
+
+  frontend-proxy:
+    service:
+      type: LoadBalancer
+    ingress:
+      enabled: true
+      ingressClassName: alb
+      annotations:
+        kubernetes.io/ingress.class: alb
+        alb.ingress.kubernetes.io/scheme: internet-facing
+        alb.ingress.kubernetes.io/target-type: ip
+        alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:us-east-1:445606683808:certificate/bced14e9-9cc5-49f1-b1fa-f762b4de535a"
+        alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+        alb.ingress.kubernetes.io/ssl-redirect: '443'
+        alb.ingress.kubernetes.io/group.name: portfolio
+      hosts:
+        - host: otel-demo.creechlabs.dev
+          paths:
+            - path: /
+              pathType: Prefix
+              port: 8080

@@ -1,0 +1,99 @@
+image:
+  repository: "ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-contrib"
+  pullPolicy: IfNotPresent
+  tag: "0.153.0"
+
+clusterRole:
+  create: true
+  # Required for k8sattributes processor to enrich telemetry with pod/namespace metadata
+  rules:
+    - apiGroups: [""]
+      resources: ["pods", "namespaces", "nodes"]
+      verbs: ["get", "watch", "list"]
+    - apiGroups: ["apps"]
+      resources: ["replicasets"]
+      verbs: ["get", "watch", "list"]
+
+ports:
+  metrics:
+    enabled: true
+    containerPort: 8888
+    servicePort: 8888
+    protocol: TCP
+  prometheus:
+    enabled: true
+    containerPort: 8889
+    servicePort: 8889
+    protocol: TCP
+
+mode: deployment
+replicaCount: 1  # keep at 1 for portfolio cost
+config:
+  exporters:
+    prometheusremotewrite:
+      endpoint: "http://prometheus-server.observability.svc.cluster.local:80/api/v1/write"
+      resource_to_telemetry_conversion:
+        enabled: true
+    otlp/tempo:
+      endpoint: tempo.observability.svc.cluster.local:4317
+      tls:
+        insecure: true
+    otlphttp/loki:
+      endpoint: "http://loki.observability.svc.cluster.local:3100/otlp"
+      tls:
+        insecure: true
+
+  receivers:
+    otlp:
+      protocols:
+        grpc: {}
+        http: {}
+    prometheus:
+      config:
+        scrape_configs:
+          - job_name: 'loki-internal-metrics'
+            static_configs:
+              - targets: ['loki.observability.svc.cluster.local:3100']
+          - job_name: 'tempo-internal-metrics'
+            static_configs:
+              - targets: ['tempo.observability.svc.cluster.local:3100']
+
+  processors:
+    batch: {}
+    memory_limiter:
+      check_interval: 1s
+      limit_percentage: 75
+      spike_limit_percentage: 15
+    k8sattributes:
+      auth_type: "kubeConfig"
+      passthrough: false
+      extract:
+        metadata:
+          - k8s.container.name
+          - k8s.pod.name
+          - k8s.deployment.name
+          - k8s.namespace.name
+          - k8s.node.name
+        labels:
+          - tag_name: app.kubernetes.io/name
+            key: app.kubernetes.io/name
+    attributes/loki_hints:
+      actions:
+        - action: insert
+          key: loki.resource.labels
+          value: k8s.namespace.name, k8s.pod.name, k8s.deployment.name
+
+  service:
+    pipelines:
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, k8sattributes, batch]
+        exporters: [otlp/tempo]
+      metrics:
+        receivers: [otlp, prometheus]
+        processors: [memory_limiter, k8sattributes, batch]
+        exporters: [prometheusremotewrite]
+      logs:
+        receivers: [otlp]
+        processors: [memory_limiter, k8sattributes, attributes/loki_hints, batch]
+        exporters: [otlphttp/loki]

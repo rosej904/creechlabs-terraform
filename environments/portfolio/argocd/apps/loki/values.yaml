@@ -1,0 +1,60 @@
+deploymentMode: Monolithic
+singleBinary:
+  replicas: 1
+persistence:
+  enabled: true
+  size: 5Gi
+  storageClass: gp3
+
+loki:
+  auth_enabled: false
+  distributor:
+    otlp_config:
+      default_resource_attributes_as_index_labels: 
+        - k8s.namespace.name
+        - k8s.pod.name
+        - k8s.deployment.name
+  commonConfig:
+    replication_factor: 1
+    path_prefix: /var/loki
+  storage:
+    type: filesystem
+  filesystem:
+    chunks_directory: /var/loki/chunks
+    rules_directory: /var/loki/rules
+
+  schemaConfig:
+    configs:
+      - from: "2024-04-01"
+        store: tsdb
+        object_store: filesystem
+        schema: v13
+        index:
+          prefix: index_
+          period: 24h
+  
+  rulerConfig:
+    storage:
+      type: local
+
+memcachedExporter:
+  enabled: false
+chunksCache:
+  enabled: false
+resultsCache:
+  enabled: false
+  
+# Force-disable all other components to stop the "Multiple Replicas" error
+backend: { replicas: 0 }
+read: { replicas: 0 }
+write: { replicas: 0 }
+ingester: { replicas: 0 }
+querier: { replicas: 0 }
+queryFrontend: { replicas: 0 }
+queryScheduler: { replicas: 0 }
+distributor: { replicas: 0 }
+compactor: { replicas: 0 }
+indexGateway: { replicas: 0 }
+gateway: { enabled: false }
+lokiCanary: { enabled: false }
+test: { enabled: false }

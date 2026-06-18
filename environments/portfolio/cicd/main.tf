@@ -42,16 +42,16 @@ resource "aws_secretsmanager_secret_version" "cloudflare_api_token" {
   secret_string = var.cloudflare_api_token
 }
 
-resource "aws_secretsmanager_secret" "argocd_admin_password" {
-  name        = "cl-portfolio/argocd_admin_password"
+resource "aws_secretsmanager_secret" "ui_admin_password" {
+  name        = "cl-portfolio/ui_admin_password"
   description = "ArgoCD admin password"
 
   tags = local.common_tags
 }
 
-resource "aws_secretsmanager_secret_version" "argocd_admin_password" {
-  secret_id     = aws_secretsmanager_secret.argocd_admin_password.id
-  secret_string = var.argocd_admin_password
+resource "aws_secretsmanager_secret_version" "ui_admin_password" {
+  secret_id     = aws_secretsmanager_secret.ui_admin_password.id
+  secret_string = var.ui_admin_password
 }
 
 resource "aws_secretsmanager_secret" "argocd_repo_ssh_private_key" {
@@ -109,6 +109,18 @@ resource "aws_codebuild_project" "terraform_apply" {
     environment_variable {
       name  = "CLOUDFLARE_API_TOKEN"
       value = aws_secretsmanager_secret.cloudflare_api_token.name
+      type  = "SECRETS_MANAGER"
+    }
+
+    environment_variable {
+      name  = "UI_ADMIN_PASSWORD"
+      value = aws_secretsmanager_secret.ui_admin_password.name
+      type  = "SECRETS_MANAGER"
+    }
+
+    environment_variable {
+      name  = "ARGOCD_REPO_SSH_PRIVATE_KEY"
+      value = aws_secretsmanager_secret.argocd_repo_ssh_private_key.name
       type  = "SECRETS_MANAGER"
     }
   }
