@@ -26,7 +26,7 @@ provider "cloudflare" {
 data "aws_caller_identity" "current" {}
 
 # ------------------------------------------------------------
-# ACM Certificate
+# ACM Certificate — dotdev (wildcard)
 # ------------------------------------------------------------
 resource "aws_acm_certificate" "main" {
   domain_name               = var.domain_name
@@ -39,7 +39,7 @@ resource "aws_acm_certificate" "main" {
 }
 
 # ------------------------------------------------------------
-# Cloudflare DNS validation records
+# Cloudflare DNS validation records — dotdev
 # ------------------------------------------------------------
 resource "cloudflare_record" "acm_validation" {
   for_each = {
@@ -57,7 +57,7 @@ resource "cloudflare_record" "acm_validation" {
   type            = each.value.type
   ttl             = 60
   proxied         = false
-  allow_overwrite = true 
+  allow_overwrite = true
 
   comment = "ACM certificate validation — managed by Terraform"
 }
@@ -65,4 +65,45 @@ resource "cloudflare_record" "acm_validation" {
 resource "aws_acm_certificate_validation" "main" {
   certificate_arn         = aws_acm_certificate.main.arn
   validation_record_fqdns = [for record in cloudflare_record.acm_validation : record.hostname]
+}
+
+# ------------------------------------------------------------
+# ACM Certificate — dotcom
+# ------------------------------------------------------------
+resource "aws_acm_certificate" "dotcom" {
+  domain_name               = var.dotcom_domain_name
+  subject_alternative_names = ["www.${var.dotcom_domain_name}"]
+  validation_method         = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
+# ------------------------------------------------------------
+# Cloudflare DNS validation records — dotcom
+# ------------------------------------------------------------
+resource "cloudflare_record" "dotcom_acm_validation" {
+  for_each = {
+    for dvo in aws_acm_certificate.dotcom.domain_validation_options : dvo.domain_name => {
+      name  = dvo.resource_record_name
+      value = dvo.resource_record_value
+      type  = dvo.resource_record_type
+    }
+  }
+
+  zone_id         = var.cloudflare_dotcom_zone_id
+  name            = each.value.name
+  content         = each.value.value
+  type            = each.value.type
+  ttl             = 60
+  proxied         = false
+  allow_overwrite = true
+
+  comment = "ACM certificate validation (creechlabs.com) — managed by Terraform"
+}
+
+resource "aws_acm_certificate_validation" "dotcom" {
+  certificate_arn         = aws_acm_certificate.dotcom.arn
+  validation_record_fqdns = [for record in cloudflare_record.dotcom_acm_validation : record.hostname]
 }

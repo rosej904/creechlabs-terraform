@@ -13,7 +13,7 @@ variable "project_name" {
 variable "domain_name" {
   description = "Primary domain name"
   type        = string
-  default     = "domain.com"
+  default     = "domain.dev"
 }
 
 variable "cloudflare_api_token" {
@@ -24,6 +24,18 @@ variable "cloudflare_api_token" {
 
 variable "cloudflare_zone_id" {
   description = "Cloudflare zone id token may also be gitignored in terraform.tfvars"
+  type        = string
+  default     = ""
+}
+
+variable "dotcom_domain_name" {
+  description = "dotcom domain name"
+  type        = string
+  default     = "domain.com"
+}
+
+variable "cloudflare_dotcom_zone_id" {
+  description = "Cloudflare zone ID for the dotcom zone may also be gitignored in terraform.tfvars"
   type        = string
   default     = ""
 }
