@@ -23,7 +23,6 @@ resource "cloudflare_record" "www_dev" {
 }
 
 # com apex -> redirect distribution -> apex (.dev)
-# NOTE: this assumes creechlabs.com is its own Cloudflare zone
 resource "cloudflare_record" "apex_com" {
   zone_id = var.cloudflare_com_zone_id
   name    = "creechlabs.com"
