@@ -18,3 +18,13 @@ output "domain_name" {
   description = "Primary domain name"
   value       = var.domain_name
 }
+
+output "dotcom_acm_certificate_arn" {
+  description = "ACM certificate ARN for creechlabs.com + www.creechlabs.com — used only by portfolio-ui's com-redirect distribution"
+  value       = aws_acm_certificate.dotcom.arn
+}
+
+output "dotcom_certificate_status" {
+  description = "creechlabs.com ACM certificate validation status"
+  value       = aws_acm_certificate.dotcom.status
+}
