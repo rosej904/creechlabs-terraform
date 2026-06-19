@@ -49,9 +49,8 @@ def check_eks_cluster():
             return "stopped", {"clusterStatus": cluster_status}
         return "down", {"clusterStatus": cluster_status}
     except eks_client.exceptions.ResourceNotFoundException:
-        # Cluster doesn't exist right now -> nightly destroy already ran.
         return "stopped", {"clusterStatus": "NOT_FOUND"}
-    except Exception as exc:  # noqa: BLE001 - want to surface any AWS error as "down"
+    except Exception as exc: 
         return "down", {"error": str(exc)}
 
 
@@ -71,13 +70,10 @@ def check_http_target(name, url):
                 return "up", {"httpStatus": resp.status}
             return "down", {"httpStatus": resp.status}
     except urllib.error.HTTPError as exc:
-        # Some health endpoints (e.g. Grafana) may return 401/403 when
-        # anonymous access is restricted on /api/health specifically --
-        # still treat reachable-with-4xx as "up" since the service is alive.
         if 400 <= exc.code < 500:
             return "up", {"httpStatus": exc.code}
         return "down", {"httpStatus": exc.code}
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         return "down", {"error": str(exc)}
 
 
@@ -87,15 +83,12 @@ def build_response_body():
     app_results = {}
     for name, url in STATUS_TARGETS.items():
         if eks_status == "stopped":
-            # Cluster is confirmed gone -- apps can't be reachable.
-            # Skip the (doomed) HTTP call to save time and avoid noisy errors.
             app_results[name] = {"status": "stopped", "detail": {"reason": "eks_stopped"}}
             continue
 
         status, detail = check_http_target(name, url)
         app_results[name] = {"status": status, "detail": detail}
 
-    # Roll up all apps into one aggregate status for the simple frontend indicator.
     app_statuses = [r["status"] for r in app_results.values()]
     if all(s == "stopped" for s in app_statuses):
         apps_aggregate = "stopped"
@@ -110,7 +103,7 @@ def build_response_body():
     }
 
 
-def handler(event, context):  # noqa: ARG001 - Lambda signature requires both params
+def handler(event, context): 
     body = build_response_body()
 
     return {

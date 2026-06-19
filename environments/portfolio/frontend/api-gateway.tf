@@ -1,8 +1,5 @@
 # ─────────────────────────────────────────────────────────
-# API Gateway (HTTP API — cheaper & simpler than REST API)
-# fronting the status Lambda. CloudFront proxies /api/* here
-# (see cloudfront.tf) so the browser never talks to this
-# endpoint directly and CORS is a non-issue.
+# API Gateway
 # ─────────────────────────────────────────────────────────
 
 resource "aws_apigatewayv2_api" "status_api" {

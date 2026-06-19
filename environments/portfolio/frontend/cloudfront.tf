@@ -1,8 +1,5 @@
 # ─────────────────────────────────────────────────────────
-# CloudFront distribution serving the React SPA from S3.
-# Handles portfolio.creechlabs.dev + www.creechlabs.dev.
-# SPA routing: 403/404 from S3 -> 200 index.html so the
-# client-side router (or simple anchor nav) takes over.
+# CloudFront distribution
 # ─────────────────────────────────────────────────────────
 
 resource "aws_cloudfront_origin_access_control" "frontend" {

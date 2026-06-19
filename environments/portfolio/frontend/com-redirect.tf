@@ -1,9 +1,5 @@
 # ─────────────────────────────────────────────────────────
-# creechlabs.com -> https://creechlabs.dev (301 redirect)
-# Implemented as an empty S3 bucket configured for website
-# redirect, fronted by its own CloudFront distribution so it
-# can present the ACM cert and serve HTTPS (S3 website
-# endpoints alone are HTTP-only).
+ S3 Buckets + CF Dist for redirects
 # ─────────────────────────────────────────────────────────
 
 resource "aws_s3_bucket" "com_redirect" {

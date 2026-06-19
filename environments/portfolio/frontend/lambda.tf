@@ -1,7 +1,5 @@
 # ─────────────────────────────────────────────────────────
-# Status checker Lambda. Runs independently of EKS, checks
-# real AWS + HTTP state, returns a coarse green/blue/red
-# status payload for the frontend.
+# Status checker Lambda
 # ─────────────────────────────────────────────────────────
 
 data "archive_file" "status_checker" {
@@ -33,7 +31,6 @@ resource "aws_iam_role_policy_attachment" "status_checker_basic_logs" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Read-only, scoped to exactly the one EKS cluster this layer checks.
 resource "aws_iam_role_policy" "status_checker_eks_read" {
   name = "eks-describe-cluster-readonly"
   role = aws_iam_role.status_checker.id

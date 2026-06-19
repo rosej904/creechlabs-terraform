@@ -26,13 +26,11 @@ terraform plan
 terraform apply
 ```
 
-You'll also need a `backend.hcl` (gitignored, same pattern as other
-layers) pointing at the `cl-portfolio-tf-state-445606683808` bucket
-with a unique `key`, e.g.:
+`backend.hcl` is gitignored
 
 ```hcl
-bucket       = "cl-portfolio-tf-state-445606683808"
-key          = "portfolio-ui/terraform.tfstate"
+bucket       = "s3-bucket-name"
+key          = "state-key-name"
 region       = "us-east-1"
 use_lockfile = true
 ```
@@ -69,12 +67,7 @@ This will move into a `Makefile` target as part of the React app work.
   if the cluster doesn't exist (post-destroy), it correctly reports
   `"stopped"` rather than erroring, since `ResourceNotFoundException`
   is treated as the expected nightly-teardown state.
+- Lambda is fronted by API Gateway
 - All app reachability checks are skipped entirely once EKS is
   confirmed stopped, to avoid noisy timeouts against URLs that can't
   possibly resolve.
-- CloudFront `price_class = PriceClass_100` keeps this in the cheapest
-  tier (NA/EU edge locations) — fine for a portfolio site with no
-  global audience requirement.
-- DNS records are unproxied (`proxied = false`) since CloudFront is
-  already the TLS termination point and CDN — Cloudflare here is acting
-  as DNS-only.

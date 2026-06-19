@@ -1,6 +1,5 @@
 # ─────────────────────────────────────────────────────────
-# S3 bucket holding the built React/Vite static assets.
-# Private bucket — only reachable via CloudFront using OAC.
+# S3 bucket holding the built React/Vite static assets + Policy
 # ─────────────────────────────────────────────────────────
 
 resource "aws_s3_bucket" "frontend" {
@@ -34,7 +33,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "frontend" {
   }
 }
 
-# Bucket policy: allow only this CloudFront distribution to GET objects.
 resource "aws_s3_bucket_policy" "frontend" {
   bucket = aws_s3_bucket.frontend.id
   policy = data.aws_iam_policy_document.frontend_oac.json

@@ -1,8 +1,5 @@
 # ─────────────────────────────────────────────────────────
-# www.creechlabs.dev -> https://creechlabs.dev (301 redirect)
-# Same pattern as com-redirect.tf — empty S3 bucket configured
-# for website redirect, fronted by CloudFront for HTTPS since
-# S3 website endpoints are HTTP-only.
+ S3 Buckets + CF Dist for redirects
 # ─────────────────────────────────────────────────────────
 
 resource "aws_s3_bucket" "www_redirect" {
@@ -63,8 +60,6 @@ resource "aws_cloudfront_distribution" "www_redirect" {
     }
   }
 
-  # www.creechlabs.dev IS covered by the *.creechlabs.dev wildcard,
-  # so this reuses the main wildcard cert — not the dotcom cert.
   viewer_certificate {
     acm_certificate_arn      = var.acm_certificate_arn
     ssl_support_method        = "sni-only"
