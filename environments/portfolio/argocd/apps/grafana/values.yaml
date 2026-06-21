@@ -86,246 +86,214 @@ alerting:
         folder: SLO Alerts
         interval: 1m
         rules:
-          # ===== CHECKOUT =====
-          - uid: checkout-fast-burn
-            title: "Checkout - Fast Burn (Page)"
+          - uid: slo-fast-burn-dynamic
+            title: "SLO - Fast Burn (Page)"
             condition: C
             for: 2m
             noDataState: OK
             execErrState: OK
-            labels: { severity: page, service: checkout }
-            annotations: { summary: "Checkout error budget burning fast (>14.4x) - would exhaust 30d budget in ~2 days" }
+            labels: { severity: page }
+            annotations: { summary: "Service error budget burning fast (>14.4x)" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "service:burnrate5m{service=\"checkout\"}", refId: A }
+                model: { expr: "service:burnrate5m and on(service) slo:member:errorbudget", refId: A }
               - refId: B
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 3600, to: 0 }
-                model: { expr: "service:burnrate1h{service=\"checkout\"}", refId: B }
+                model: { expr: "service:burnrate1h and on(service) slo:member:errorbudget", refId: B }
               - refId: C
                 datasourceUid: __expr__
                 model: { type: math, expression: "$A > 14.4 && $B > 14.4", refId: C }
 
-          - uid: checkout-slow-burn
-            title: "Checkout - Slow Burn (Ticket)"
+          - uid: slo-slow-burn-dynamic
+            title: "SLO - Slow Burn (Ticket)"
             condition: C
             for: 5m
             noDataState: OK
             execErrState: OK
-            labels: { severity: ticket, service: checkout }
-            annotations: { summary: "Checkout error budget burning slowly (>6x) - would exhaust 30d budget in ~5 days" }
+            labels: { severity: ticket }
+            annotations: { summary: "Service error budget burning slowly (>6x)" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 1800, to: 0 }
-                model: { expr: "service:burnrate30m{service=\"checkout\"}", refId: A }
+                model: { expr: "service:burnrate30m and on(service) slo:member:errorbudget", refId: A }
               - refId: B
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 10800, to: 0 }
-                model: { expr: "service:burnrate3h{service=\"checkout\"}", refId: B }
+                model: { expr: "service:burnrate3h and on(service) slo:member:errorbudget", refId: B }
               - refId: C
                 datasourceUid: __expr__
                 model: { type: math, expression: "$A > 6 && $B > 6", refId: C }
 
-          - uid: checkout-latency-p95
-            title: "Checkout - p95 Latency SLO Breach"
+          - uid: slo-latency-p95-dynamic
+            title: "SLO - p95 Latency Breach"
             condition: B
             for: 5m
             noDataState: OK
             execErrState: OK
-            labels: { severity: ticket, service: checkout }
-            annotations: { summary: "Checkout p95 latency above 500ms SLO target" }
+            labels: { severity: ticket }
+            annotations: { summary: "Service p95 latency above 500ms SLO target" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "service:latency_p95:5m{service=\"checkout\"}", refId: A }
+                model: { expr: "service:latency_p95:5m and on(service) slo:member:latency_p95", refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0.5] } }], refId: B }
 
-          # ===== RECOMMENDATION =====
-          - uid: recommendation-fast-burn
-            title: "Recommendation - Fast Burn (Page)"
-            condition: C
-            for: 2m
-            noDataState: OK
-            execErrState: OK
-            labels: { severity: page, service: recommendation }
-            annotations: { summary: "Recommendation error budget burning fast (>14.4x) - would exhaust 30d budget in ~2 days" }
-            data:
-              - refId: A
-                datasourceUid: prometheus
-                relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "service:burnrate5m{service=\"recommendation\"}", refId: A }
-              - refId: B
-                datasourceUid: prometheus
-                relativeTimeRange: { from: 3600, to: 0 }
-                model: { expr: "service:burnrate1h{service=\"recommendation\"}", refId: B }
-              - refId: C
-                datasourceUid: __expr__
-                model: { type: math, expression: "$A > 14.4 && $B > 14.4", refId: C }
-
-          - uid: recommendation-slow-burn
-            title: "Recommendation - Slow Burn (Ticket)"
-            condition: C
-            for: 5m
-            noDataState: OK
-            execErrState: OK
-            labels: { severity: ticket, service: recommendation }
-            annotations: { summary: "Recommendation error budget burning slowly (>6x) - would exhaust 30d budget in ~5 days" }
-            data:
-              - refId: A
-                datasourceUid: prometheus
-                relativeTimeRange: { from: 1800, to: 0 }
-                model: { expr: "service:burnrate30m{service=\"recommendation\"}", refId: A }
-              - refId: B
-                datasourceUid: prometheus
-                relativeTimeRange: { from: 10800, to: 0 }
-                model: { expr: "service:burnrate3h{service=\"recommendation\"}", refId: B }
-              - refId: C
-                datasourceUid: __expr__
-                model: { type: math, expression: "$A > 6 && $B > 6", refId: C }
-
-          - uid: recommendation-latency-p95
-            title: "Recommendation - p95 Latency SLO Breach"
+  resource_alerts.yaml:
+    apiVersion: 1
+    groups:
+      - orgId: 1
+        name: app_resource_alerts
+        folder: Resource Alerts
+        interval: 1m
+        rules:
+          - uid: app-high-cpu-usage-dynamic
+            title: "App - High CPU Usage vs Limit"
             condition: B
             for: 5m
             noDataState: OK
             execErrState: OK
-            labels: { severity: ticket, service: recommendation }
-            annotations: { summary: "Recommendation p95 latency above 500ms SLO target" }
+            labels: { severity: ticket, scope: app }
+            annotations: { summary: "Pod CPU usage above 85% of its limit" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "service:latency_p95:5m{service=\"recommendation\"}", refId: A }
+                model: { expr: "(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"otel-demo\", container!=\"\"}[5m])) / sum by (pod) (kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"cpu\"}) * 100) and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}", refId: A }
               - refId: B
                 datasourceUid: __expr__
-                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0.5] } }], refId: B }
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [85] } }], refId: B }
 
-          # ===== FRONTEND =====
-          - uid: frontend-fast-burn
-            title: "Frontend - Fast Burn (Page)"
-            condition: C
-            for: 2m
-            noDataState: OK
-            execErrState: OK
-            labels: { severity: page, service: frontend }
-            annotations: { summary: "Frontend error budget burning fast (>14.4x) - would exhaust 30d budget in ~2 days" }
-            data:
-              - refId: A
-                datasourceUid: prometheus
-                relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "service:burnrate5m{service=\"frontend\"}", refId: A }
-              - refId: B
-                datasourceUid: prometheus
-                relativeTimeRange: { from: 3600, to: 0 }
-                model: { expr: "service:burnrate1h{service=\"frontend\"}", refId: B }
-              - refId: C
-                datasourceUid: __expr__
-                model: { type: math, expression: "$A > 14.4 && $B > 14.4", refId: C }
-
-          - uid: frontend-slow-burn
-            title: "Frontend - Slow Burn (Ticket)"
-            condition: C
-            for: 5m
-            noDataState: OK
-            execErrState: OK
-            labels: { severity: ticket, service: frontend }
-            annotations: { summary: "Frontend error budget burning slowly (>6x) - would exhaust 30d budget in ~5 days" }
-            data:
-              - refId: A
-                datasourceUid: prometheus
-                relativeTimeRange: { from: 1800, to: 0 }
-                model: { expr: "service:burnrate30m{service=\"frontend\"}", refId: A }
-              - refId: B
-                datasourceUid: prometheus
-                relativeTimeRange: { from: 10800, to: 0 }
-                model: { expr: "service:burnrate3h{service=\"frontend\"}", refId: B }
-              - refId: C
-                datasourceUid: __expr__
-                model: { type: math, expression: "$A > 6 && $B > 6", refId: C }
-
-          - uid: frontend-latency-p95
-            title: "Frontend - p95 Latency SLO Breach"
+          - uid: app-high-memory-usage-dynamic
+            title: "App - High Memory Usage vs Limit"
             condition: B
             for: 5m
             noDataState: OK
             execErrState: OK
-            labels: { severity: ticket, service: frontend }
-            annotations: { summary: "Frontend p95 latency above 500ms SLO target" }
+            labels: { severity: ticket, scope: app }
+            annotations: { summary: "Pod memory usage above 85% of its limit (OOM risk)" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "service:latency_p95:5m{service=\"frontend\"}", refId: A }
+                model: { expr: "(sum by (pod) (container_memory_working_set_bytes{namespace=\"otel-demo\", container!=\"\"}) / sum by (pod) (kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"memory\"}) * 100) and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}", refId: A }
               - refId: B
                 datasourceUid: __expr__
-                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0.5] } }], refId: B }
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [85] } }], refId: B }
 
-          # ===== PRODUCTCATALOG =====
-          - uid: productcatalog-fast-burn
-            title: "Product Catalog - Fast Burn (Page)"
-            condition: C
-            for: 2m
-            noDataState: OK
-            execErrState: OK
-            labels: { severity: page, service: productcatalog }
-            annotations: { summary: "Product Catalog error budget burning fast (>14.4x) - would exhaust 30d budget in ~2 days" }
-            data:
-              - refId: A
-                datasourceUid: prometheus
-                relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "service:burnrate5m{service=\"productcatalog\"}", refId: A }
-              - refId: B
-                datasourceUid: prometheus
-                relativeTimeRange: { from: 3600, to: 0 }
-                model: { expr: "service:burnrate1h{service=\"productcatalog\"}", refId: B }
-              - refId: C
-                datasourceUid: __expr__
-                model: { type: math, expression: "$A > 14.4 && $B > 14.4", refId: C }
-
-          - uid: productcatalog-slow-burn
-            title: "Product Catalog - Slow Burn (Ticket)"
-            condition: C
-            for: 5m
-            noDataState: OK
-            execErrState: OK
-            labels: { severity: ticket, service: productcatalog }
-            annotations: { summary: "Product Catalog error budget burning slowly (>6x) - would exhaust 30d budget in ~5 days" }
-            data:
-              - refId: A
-                datasourceUid: prometheus
-                relativeTimeRange: { from: 1800, to: 0 }
-                model: { expr: "service:burnrate30m{service=\"productcatalog\"}", refId: A }
-              - refId: B
-                datasourceUid: prometheus
-                relativeTimeRange: { from: 10800, to: 0 }
-                model: { expr: "service:burnrate3h{service=\"productcatalog\"}", refId: B }
-              - refId: C
-                datasourceUid: __expr__
-                model: { type: math, expression: "$A > 6 && $B > 6", refId: C }
-
-          - uid: productcatalog-latency-p95
-            title: "Product Catalog - p95 Latency SLO Breach"
+          - uid: app-pod-restart-loop-dynamic
+            title: "App - Pod Restart Loop"
             condition: B
             for: 5m
             noDataState: OK
             execErrState: OK
-            labels: { severity: ticket, service: productcatalog }
-            annotations: { summary: "Product Catalog p95 latency above 500ms SLO target" }
+            labels: { severity: page, scope: app }
+            annotations: { summary: "Pod restarting repeatedly (CrashLoopBackOff signal)" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 900, to: 0 }
+                model: { expr: "increase(kube_pod_container_status_restarts_total{namespace=\"otel-demo\"}[15m]) and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}", refId: A }
+              - refId: B
+                datasourceUid: __expr__
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [2] } }], refId: B }
+
+          - uid: app-pod-not-running-dynamic
+            title: "App - Pod Not Running"
+            condition: B
+            for: 5m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: page, scope: app }
+            annotations: { summary: "Pod stuck outside Running phase" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "service:latency_p95:5m{service=\"productcatalog\"}", refId: A }
+                model: { expr: "kube_pod_status_phase{namespace=\"otel-demo\", phase!~\"Running|Succeeded\"} and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}", refId: A }
               - refId: B
                 datasourceUid: __expr__
-                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0.5] } }], refId: B }
-          
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
+
+      - orgId: 1
+        name: infra_resource_alerts
+        folder: Resource Alerts
+        interval: 1m
+        rules:
+          - uid: infra-node-high-cpu
+            title: "Infra - Node High CPU"
+            condition: B
+            for: 5m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, scope: infra }
+            annotations: { summary: "EKS node CPU usage above 80%" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", refId: A }
+              - refId: B
+                datasourceUid: __expr__
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [80] } }], refId: B }
+
+          - uid: infra-node-high-memory
+            title: "Infra - Node High Memory"
+            condition: B
+            for: 5m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, scope: infra }
+            annotations: { summary: "EKS node memory usage above 80%" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100", refId: A }
+              - refId: B
+                datasourceUid: __expr__
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [80] } }], refId: B }
+
+          - uid: infra-node-high-disk
+            title: "Infra - Node High Disk Usage"
+            condition: B
+            for: 5m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, scope: infra }
+            annotations: { summary: "EKS node root filesystem usage above 80%" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\", fstype!=\"tmpfs\"} / node_filesystem_size_bytes{mountpoint=\"/\", fstype!=\"tmpfs\"})) * 100", refId: A }
+              - refId: B
+                datasourceUid: __expr__
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [80] } }], refId: B }
+
+          - uid: infra-node-not-ready
+            title: "Infra - Node Not Ready"
+            condition: B
+            for: 5m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: page, scope: infra }
+            annotations: { summary: "EKS node reporting NotReady condition" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: "sum(kube_node_status_condition{condition=\"Ready\", status=\"true\"} == 0)", refId: A }
+              - refId: B
+                datasourceUid: __expr__
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
+
 
 resources:
   requests:

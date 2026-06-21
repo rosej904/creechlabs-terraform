@@ -21,21 +21,21 @@ serverFiles:
       - name: slo_success_rate
         rules:
           - record: service:requests:rate5m
-            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER", service=~"checkout|recommendation|frontend|productcatalog"}[5m]))
+            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER"}[5m]))
           - record: service:requests_failed:rate5m
-            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_ERROR", service=~"checkout|recommendation|frontend|productcatalog"}[5m]))
+            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_ERROR"}[5m]))
           - record: service:requests:rate1h
-            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER", service=~"checkout|recommendation|frontend|productcatalog"}[1h]))
+            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER"}[1h]))
           - record: service:requests_failed:rate1h
-            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_ERROR", service=~"checkout|recommendation|frontend|productcatalog"}[1h]))
+            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_ERROR"}[1h]))
           - record: service:requests:rate30m
-            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER", service=~"checkout|recommendation|frontend|productcatalog"}[30m]))
+            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER"}[30m]))
           - record: service:requests_failed:rate30m
-            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_ERROR", service=~"checkout|recommendation|frontend|productcatalog"}[30m]))
+            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_ERROR"}[30m]))
           - record: service:requests:rate3h
-            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER", service=~"checkout|recommendation|frontend|productcatalog"}[3h]))
+            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER"}[3h]))
           - record: service:requests_failed:rate3h
-            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_ERROR", service=~"checkout|recommendation|frontend|productcatalog"}[3h]))
+            expr: sum by (service) (rate(traces_spanmetrics_calls_total{span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_ERROR"}[3h]))
 
           - record: service:burnrate5m
             expr: (service:requests_failed:rate5m / service:requests:rate5m) / 0.01
@@ -49,19 +49,16 @@ serverFiles:
       - name: slo_latency
         rules:
           - record: service:latency_p95:5m
-            expr: |
-              histogram_quantile(0.95,
-                sum by (service, le) (
-                  rate(traces_spanmetrics_latency_bucket{span_kind="SPAN_KIND_SERVER", service=~"checkout|recommendation|frontend|productcatalog"}[5m])
-                )
-              )
+            expr: histogram_quantile(0.95, sum by (service, le) (rate(traces_spanmetrics_latency_bucket{span_kind="SPAN_KIND_SERVER"}[5m])))
           - record: service:latency_p99:5m
-            expr: |
-              histogram_quantile(0.99,
-                sum by (service, le) (
-                  rate(traces_spanmetrics_latency_bucket{span_kind="SPAN_KIND_SERVER", service=~"checkout|recommendation|frontend|productcatalog"}[5m])
-                )
-              )
+            expr: histogram_quantile(0.99, sum by (service, le) (rate(traces_spanmetrics_latency_bucket{span_kind="SPAN_KIND_SERVER"}[5m])))
+
+      - name: slo_membership
+        rules:
+          - record: slo:member:errorbudget
+            expr: group by (service) (label_replace(kube_pod_labels{namespace="otel-demo", label_slo_errorbudget="true"}, "service", "$1", "label_app_kubernetes_io_name", "(.*)"))
+          - record: slo:member:latency_p95
+            expr: group by (service) (label_replace(kube_pod_labels{namespace="otel-demo", label_slo_latency_p95="true"}, "service", "$1", "label_app_kubernetes_io_name", "(.*)"))
 
 alertmanager:
   enabled: false
@@ -71,6 +68,8 @@ prometheus-pushgateway:
 
 kube-state-metrics:
   enabled: true
+  metricLabelsAllowlist:
+    - pods=[slo-errorbudget,slo-latency-p95,pod-health,team]
 
 nodeExporter:
   enabled: true
