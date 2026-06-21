@@ -68,13 +68,264 @@ datasources:
           tracesToMetrics:
             datasourceUid: prometheus
             spanTimer:
-              metric: 'http_server_request_duration_seconds_count'
+              metric: 'traces_spanmetrics_latency_count'
             queries:
             - name: 'Request Duration (Heatmap)'
-              query: 'sum(rate(http_server_request_duration_seconds_bucket{service_name=~"($service_name|.+)"}[5m])) by (le, service_name)'
+              query: 'sum(rate(traces_spanmetrics_latency_bucket{service=~"($service|.+)"}[5m])) by (le, service)'
             - name: 'Average Latency'
-              query: 'sum(rate(http_server_request_duration_seconds_sum{service_name=~"($service_name|.+)"}[5m])) by (service_name) / sum(rate(http_server_request_duration_seconds_count{service_name=~"($service_name|.+)"}[5m])) by (service_name) * 1000'
+              query: 'sum(rate(traces_spanmetrics_latency_sum{service=~"($service|.+)"}[5m])) by (service) / sum(rate(traces_spanmetrics_latency_count{service=~"($service|.+)"}[5m])) by (service) * 1000'
+            - name: 'Request Rate'
+              query: 'sum(rate(traces_spanmetrics_calls_total{service=~"($service|.+)"}[5m])) by (service)'
               
+alerting:
+  slo_burn_rate_alerts.yaml:
+    apiVersion: 1
+    groups:
+      - orgId: 1
+        name: slo_burn_rate_alerts
+        folder: SLO Alerts
+        interval: 1m
+        rules:
+          # ===== CHECKOUT =====
+          - uid: checkout-fast-burn
+            title: "Checkout - Fast Burn (Page)"
+            condition: C
+            for: 2m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: page, service: checkout }
+            annotations: { summary: "Checkout error budget burning fast (>14.4x) — would exhaust 30d budget in ~2 days" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: service:burnrate5m{service="checkout"}, refId: A }
+              - refId: B
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 3600, to: 0 }
+                model: { expr: service:burnrate1h{service="checkout"}, refId: B }
+              - refId: C
+                datasourceUid: __expr__
+                model: { type: math, expression: "$A > 14.4 && $B > 14.4", refId: C }
+
+          - uid: checkout-slow-burn
+            title: "Checkout - Slow Burn (Ticket)"
+            condition: C
+            for: 5m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, service: checkout }
+            annotations: { summary: "Checkout error budget burning slowly (>6x) — would exhaust 30d budget in ~5 days" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 1800, to: 0 }
+                model: { expr: service:burnrate30m{service="checkout"}, refId: A }
+              - refId: B
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 10800, to: 0 }
+                model: { expr: service:burnrate3h{service="checkout"}, refId: B }
+              - refId: C
+                datasourceUid: __expr__
+                model: { type: math, expression: "$A > 6 && $B > 6", refId: C }
+
+          - uid: checkout-latency-p95
+            title: "Checkout - p95 Latency SLO Breach"
+            condition: B
+            for: 5m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, service: checkout }
+            annotations: { summary: "Checkout p95 latency above 500ms SLO target" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: service:latency_p95:5m{service="checkout"}, refId: A }
+              - refId: B
+                datasourceUid: __expr__
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0.5] } }], refId: B }
+
+          # ===== RECOMMENDATION =====
+          - uid: recommendation-fast-burn
+            title: "Recommendation - Fast Burn (Page)"
+            condition: C
+            for: 2m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: page, service: recommendation }
+            annotations: { summary: "Recommendation error budget burning fast (>14.4x) — would exhaust 30d budget in ~2 days" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: service:burnrate5m{service="recommendation"}, refId: A }
+              - refId: B
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 3600, to: 0 }
+                model: { expr: service:burnrate1h{service="recommendation"}, refId: B }
+              - refId: C
+                datasourceUid: __expr__
+                model: { type: math, expression: "$A > 14.4 && $B > 14.4", refId: C }
+
+          - uid: recommendation-slow-burn
+            title: "Recommendation - Slow Burn (Ticket)"
+            condition: C
+            for: 5m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, service: recommendation }
+            annotations: { summary: "Recommendation error budget burning slowly (>6x) — would exhaust 30d budget in ~5 days" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 1800, to: 0 }
+                model: { expr: service:burnrate30m{service="recommendation"}, refId: A }
+              - refId: B
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 10800, to: 0 }
+                model: { expr: service:burnrate3h{service="recommendation"}, refId: B }
+              - refId: C
+                datasourceUid: __expr__
+                model: { type: math, expression: "$A > 6 && $B > 6", refId: C }
+
+          - uid: recommendation-latency-p95
+            title: "Recommendation - p95 Latency SLO Breach"
+            condition: B
+            for: 5m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, service: recommendation }
+            annotations: { summary: "Recommendation p95 latency above 500ms SLO target" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: service:latency_p95:5m{service="recommendation"}, refId: A }
+              - refId: B
+                datasourceUid: __expr__
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0.5] } }], refId: B }
+
+          # ===== FRONTEND =====
+          - uid: frontend-fast-burn
+            title: "Frontend - Fast Burn (Page)"
+            condition: C
+            for: 2m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: page, service: frontend }
+            annotations: { summary: "Frontend error budget burning fast (>14.4x) — would exhaust 30d budget in ~2 days" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: service:burnrate5m{service="frontend"}, refId: A }
+              - refId: B
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 3600, to: 0 }
+                model: { expr: service:burnrate1h{service="frontend"}, refId: B }
+              - refId: C
+                datasourceUid: __expr__
+                model: { type: math, expression: "$A > 14.4 && $B > 14.4", refId: C }
+
+          - uid: frontend-slow-burn
+            title: "Frontend - Slow Burn (Ticket)"
+            condition: C
+            for: 5m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, service: frontend }
+            annotations: { summary: "Frontend error budget burning slowly (>6x) — would exhaust 30d budget in ~5 days" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 1800, to: 0 }
+                model: { expr: service:burnrate30m{service="frontend"}, refId: A }
+              - refId: B
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 10800, to: 0 }
+                model: { expr: service:burnrate3h{service="frontend"}, refId: B }
+              - refId: C
+                datasourceUid: __expr__
+                model: { type: math, expression: "$A > 6 && $B > 6", refId: C }
+
+          - uid: frontend-latency-p95
+            title: "Frontend - p95 Latency SLO Breach"
+            condition: B
+            for: 5m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, service: frontend }
+            annotations: { summary: "Frontend p95 latency above 500ms SLO target" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: service:latency_p95:5m{service="frontend"}, refId: A }
+              - refId: B
+                datasourceUid: __expr__
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0.5] } }], refId: B }
+
+          # ===== PRODUCTCATALOG =====
+          - uid: productcatalog-fast-burn
+            title: "Product Catalog - Fast Burn (Page)"
+            condition: C
+            for: 2m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: page, service: productcatalog }
+            annotations: { summary: "Product Catalog error budget burning fast (>14.4x) — would exhaust 30d budget in ~2 days" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: service:burnrate5m{service="productcatalog"}, refId: A }
+              - refId: B
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 3600, to: 0 }
+                model: { expr: service:burnrate1h{service="productcatalog"}, refId: B }
+              - refId: C
+                datasourceUid: __expr__
+                model: { type: math, expression: "$A > 14.4 && $B > 14.4", refId: C }
+
+          - uid: productcatalog-slow-burn
+            title: "Product Catalog - Slow Burn (Ticket)"
+            condition: C
+            for: 5m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, service: productcatalog }
+            annotations: { summary: "Product Catalog error budget burning slowly (>6x) — would exhaust 30d budget in ~5 days" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 1800, to: 0 }
+                model: { expr: service:burnrate30m{service="productcatalog"}, refId: A }
+              - refId: B
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 10800, to: 0 }
+                model: { expr: service:burnrate3h{service="productcatalog"}, refId: B }
+              - refId: C
+                datasourceUid: __expr__
+                model: { type: math, expression: "$A > 6 && $B > 6", refId: C }
+
+          - uid: productcatalog-latency-p95
+            title: "Product Catalog - p95 Latency SLO Breach"
+            condition: B
+            for: 5m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, service: productcatalog }
+            annotations: { summary: "Product Catalog p95 latency above 500ms SLO target" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: service:latency_p95:5m{service="productcatalog"}, refId: A }
+              - refId: B
+                datasourceUid: __expr__
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0.5] } }], refId: B }
+          
 
 resources:
   requests:
