@@ -60,7 +60,7 @@ datasources:
             filterByTraceID: false
             filterBySpanID: false
             customQuery: true
-            query: '{${__tags}} | trace_id="${__trace.traceId}" | span_id="${__span.spanId}"'
+            query: '{$${__tags}} | trace_id="$${__trace.traceId}" | span_id="$${__span.spanId}"'
             tags:
               - key: 'service.name'
                 value: 'service_name'
