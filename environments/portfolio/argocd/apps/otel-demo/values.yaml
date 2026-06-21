@@ -69,7 +69,7 @@ components:
       slo-latency-p95: "true"
       pod-health: "true"
       team: "app_team_name"
-      resources:
+    resources:
       limits:
         memory: 250Mi
         cpu: 40m
