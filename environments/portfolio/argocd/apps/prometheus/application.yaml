@@ -6,16 +6,16 @@ metadata:
 spec:
   project: default
   sources:
+    - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
+      targetRevision: feature/observability-config-demo
+      ref: values
+      
     - repoURL: https://prometheus-community.github.io/helm-charts
       chart: prometheus
       targetRevision: 29.6.0
       helm:
         valueFiles:
           - $values/environments/portfolio/argocd/apps/prometheus/values.yaml
-
-    - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: feature/observability-config-demo
-      ref: values
 
   destination:
     server: https://kubernetes.default.svc
