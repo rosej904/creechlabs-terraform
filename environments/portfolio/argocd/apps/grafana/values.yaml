@@ -309,12 +309,12 @@ alerting:
             noDataState: OK
             execErrState: OK
             labels: { severity: ticket, scope: policy }
-            annotations: { summary: "One or more otel-demo containers have no CPU limit defined" }
+            annotations: { summary: "One or more containers have no CPU limit defined" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "count(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"cpu\"})", refId: A }
+                model: { expr: "sum by (deployment) (  label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"cpu\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-O0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
@@ -326,12 +326,12 @@ alerting:
             noDataState: OK
             execErrState: OK
             labels: { severity: ticket, scope: policy }
-            annotations: { summary: "One or more otel-demo containers have no CPU request defined" }
+            annotations: { summary: "One or more containers have no CPU request defined" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "count(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"cpu\"})", refId: A }
+                model: { expr: "sum by (deployment) (  label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"cpu\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-O0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
@@ -343,12 +343,12 @@ alerting:
             noDataState: OK
             execErrState: OK
             labels: { severity: ticket, scope: policy }
-            annotations: { summary: "One or more otel-demo containers have no memory limit defined" }
+            annotations: { summary: "One or more containers have no memory limit defined" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "count(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"memory\"})", refId: A }
+                model: { expr: "sum by (deployment) (  label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"memory\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-O0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
@@ -360,12 +360,12 @@ alerting:
             noDataState: OK
             execErrState: OK
             labels: { severity: ticket, scope: policy }
-            annotations: { summary: "One or more otel-demo containers have no memory request defined" }
+            annotations: { summary: "One or more containers have no memory request defined" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "count(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"memory\"})", refId: A }
+                model: { expr: "sum by (deployment) (  label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"memory\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-O0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
