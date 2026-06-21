@@ -94,16 +94,16 @@ alerting:
             noDataState: OK
             execErrState: OK
             labels: { severity: page, service: checkout }
-            annotations: { summary: "Checkout error budget burning fast (>14.4x) — would exhaust 30d budget in ~2 days" }
+            annotations: { summary: "Checkout error budget burning fast (>14.4x) - would exhaust 30d budget in ~2 days" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: service:burnrate5m{service="checkout"}, refId: A }
+                model: { expr: "service:burnrate5m{service=\"checkout\"}", refId: A }
               - refId: B
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 3600, to: 0 }
-                model: { expr: service:burnrate1h{service="checkout"}, refId: B }
+                model: { expr: "service:burnrate1h{service=\"checkout\"}", refId: B }
               - refId: C
                 datasourceUid: __expr__
                 model: { type: math, expression: "$A > 14.4 && $B > 14.4", refId: C }
@@ -115,16 +115,16 @@ alerting:
             noDataState: OK
             execErrState: OK
             labels: { severity: ticket, service: checkout }
-            annotations: { summary: "Checkout error budget burning slowly (>6x) — would exhaust 30d budget in ~5 days" }
+            annotations: { summary: "Checkout error budget burning slowly (>6x) - would exhaust 30d budget in ~5 days" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 1800, to: 0 }
-                model: { expr: service:burnrate30m{service="checkout"}, refId: A }
+                model: { expr: "service:burnrate30m{service=\"checkout\"}", refId: A }
               - refId: B
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 10800, to: 0 }
-                model: { expr: service:burnrate3h{service="checkout"}, refId: B }
+                model: { expr: "service:burnrate3h{service=\"checkout\"}", refId: B }
               - refId: C
                 datasourceUid: __expr__
                 model: { type: math, expression: "$A > 6 && $B > 6", refId: C }
@@ -141,7 +141,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: service:latency_p95:5m{service="checkout"}, refId: A }
+                model: { expr: "service:latency_p95:5m{service=\"checkout\"}", refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0.5] } }], refId: B }
@@ -154,16 +154,16 @@ alerting:
             noDataState: OK
             execErrState: OK
             labels: { severity: page, service: recommendation }
-            annotations: { summary: "Recommendation error budget burning fast (>14.4x) — would exhaust 30d budget in ~2 days" }
+            annotations: { summary: "Recommendation error budget burning fast (>14.4x) - would exhaust 30d budget in ~2 days" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: service:burnrate5m{service="recommendation"}, refId: A }
+                model: { expr: "service:burnrate5m{service=\"recommendation\"}", refId: A }
               - refId: B
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 3600, to: 0 }
-                model: { expr: service:burnrate1h{service="recommendation"}, refId: B }
+                model: { expr: "service:burnrate1h{service=\"recommendation\"}", refId: B }
               - refId: C
                 datasourceUid: __expr__
                 model: { type: math, expression: "$A > 14.4 && $B > 14.4", refId: C }
@@ -175,16 +175,16 @@ alerting:
             noDataState: OK
             execErrState: OK
             labels: { severity: ticket, service: recommendation }
-            annotations: { summary: "Recommendation error budget burning slowly (>6x) — would exhaust 30d budget in ~5 days" }
+            annotations: { summary: "Recommendation error budget burning slowly (>6x) - would exhaust 30d budget in ~5 days" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 1800, to: 0 }
-                model: { expr: service:burnrate30m{service="recommendation"}, refId: A }
+                model: { expr: "service:burnrate30m{service=\"recommendation\"}", refId: A }
               - refId: B
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 10800, to: 0 }
-                model: { expr: service:burnrate3h{service="recommendation"}, refId: B }
+                model: { expr: "service:burnrate3h{service=\"recommendation\"}", refId: B }
               - refId: C
                 datasourceUid: __expr__
                 model: { type: math, expression: "$A > 6 && $B > 6", refId: C }
@@ -201,7 +201,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: service:latency_p95:5m{service="recommendation"}, refId: A }
+                model: { expr: "service:latency_p95:5m{service=\"recommendation\"}", refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0.5] } }], refId: B }
@@ -214,16 +214,16 @@ alerting:
             noDataState: OK
             execErrState: OK
             labels: { severity: page, service: frontend }
-            annotations: { summary: "Frontend error budget burning fast (>14.4x) — would exhaust 30d budget in ~2 days" }
+            annotations: { summary: "Frontend error budget burning fast (>14.4x) - would exhaust 30d budget in ~2 days" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: service:burnrate5m{service="frontend"}, refId: A }
+                model: { expr: "service:burnrate5m{service=\"frontend\"}", refId: A }
               - refId: B
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 3600, to: 0 }
-                model: { expr: service:burnrate1h{service="frontend"}, refId: B }
+                model: { expr: "service:burnrate1h{service=\"frontend\"}", refId: B }
               - refId: C
                 datasourceUid: __expr__
                 model: { type: math, expression: "$A > 14.4 && $B > 14.4", refId: C }
@@ -235,16 +235,16 @@ alerting:
             noDataState: OK
             execErrState: OK
             labels: { severity: ticket, service: frontend }
-            annotations: { summary: "Frontend error budget burning slowly (>6x) — would exhaust 30d budget in ~5 days" }
+            annotations: { summary: "Frontend error budget burning slowly (>6x) - would exhaust 30d budget in ~5 days" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 1800, to: 0 }
-                model: { expr: service:burnrate30m{service="frontend"}, refId: A }
+                model: { expr: "service:burnrate30m{service=\"frontend\"}", refId: A }
               - refId: B
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 10800, to: 0 }
-                model: { expr: service:burnrate3h{service="frontend"}, refId: B }
+                model: { expr: "service:burnrate3h{service=\"frontend\"}", refId: B }
               - refId: C
                 datasourceUid: __expr__
                 model: { type: math, expression: "$A > 6 && $B > 6", refId: C }
@@ -261,7 +261,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: service:latency_p95:5m{service="frontend"}, refId: A }
+                model: { expr: "service:latency_p95:5m{service=\"frontend\"}", refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0.5] } }], refId: B }
@@ -274,16 +274,16 @@ alerting:
             noDataState: OK
             execErrState: OK
             labels: { severity: page, service: productcatalog }
-            annotations: { summary: "Product Catalog error budget burning fast (>14.4x) — would exhaust 30d budget in ~2 days" }
+            annotations: { summary: "Product Catalog error budget burning fast (>14.4x) - would exhaust 30d budget in ~2 days" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: service:burnrate5m{service="productcatalog"}, refId: A }
+                model: { expr: "service:burnrate5m{service=\"productcatalog\"}", refId: A }
               - refId: B
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 3600, to: 0 }
-                model: { expr: service:burnrate1h{service="productcatalog"}, refId: B }
+                model: { expr: "service:burnrate1h{service=\"productcatalog\"}", refId: B }
               - refId: C
                 datasourceUid: __expr__
                 model: { type: math, expression: "$A > 14.4 && $B > 14.4", refId: C }
@@ -295,16 +295,16 @@ alerting:
             noDataState: OK
             execErrState: OK
             labels: { severity: ticket, service: productcatalog }
-            annotations: { summary: "Product Catalog error budget burning slowly (>6x) — would exhaust 30d budget in ~5 days" }
+            annotations: { summary: "Product Catalog error budget burning slowly (>6x) - would exhaust 30d budget in ~5 days" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 1800, to: 0 }
-                model: { expr: service:burnrate30m{service="productcatalog"}, refId: A }
+                model: { expr: "service:burnrate30m{service=\"productcatalog\"}", refId: A }
               - refId: B
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 10800, to: 0 }
-                model: { expr: service:burnrate3h{service="productcatalog"}, refId: B }
+                model: { expr: "service:burnrate3h{service=\"productcatalog\"}", refId: B }
               - refId: C
                 datasourceUid: __expr__
                 model: { type: math, expression: "$A > 6 && $B > 6", refId: C }
@@ -321,7 +321,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: service:latency_p95:5m{service="productcatalog"}, refId: A }
+                model: { expr: "service:latency_p95:5m{service=\"productcatalog\"}", refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0.5] } }], refId: B }
