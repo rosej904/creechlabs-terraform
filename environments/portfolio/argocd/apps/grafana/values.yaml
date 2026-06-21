@@ -98,11 +98,11 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "service:burnrate5m and on(service) slo:member:errorbudget", refId: A }
+                model: { expr: "service:burnrate5m and on(service) slo:member:errorbudget", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 3600, to: 0 }
-                model: { expr: "service:burnrate1h and on(service) slo:member:errorbudget", refId: B }
+                model: { expr: "service:burnrate1h and on(service) slo:member:errorbudget", instant: true, range: false, refId: B }
               - refId: C
                 datasourceUid: __expr__
                 model: { type: math, expression: "$A > 14.4 && $B > 14.4", refId: C }
@@ -119,11 +119,11 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 1800, to: 0 }
-                model: { expr: "service:burnrate30m and on(service) slo:member:errorbudget", refId: A }
+                model: { expr: "service:burnrate30m and on(service) slo:member:errorbudget", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 10800, to: 0 }
-                model: { expr: "service:burnrate3h and on(service) slo:member:errorbudget", refId: B }
+                model: { expr: "service:burnrate3h and on(service) slo:member:errorbudget", instant: true, range: false, refId: B }
               - refId: C
                 datasourceUid: __expr__
                 model: { type: math, expression: "$A > 6 && $B > 6", refId: C }
@@ -140,7 +140,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "service:latency_p95:5m and on(service) slo:member:latency_p95", refId: A }
+                model: { expr: "service:latency_p95:5m and on(service) slo:member:latency_p95", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0.5] } }], refId: B }
@@ -165,7 +165,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"otel-demo\", container!=\"\"}[5m])) / sum by (pod) (kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"cpu\"}) * 100) and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}", refId: A }
+                model: { expr: "(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"otel-demo\", container!=\"\"}[5m])) / sum by (pod) (kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"cpu\"}) * 100) and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [85] } }], refId: B }
@@ -182,7 +182,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "(sum by (pod) (container_memory_working_set_bytes{namespace=\"otel-demo\", container!=\"\"}) / sum by (pod) (kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"memory\"}) * 100) and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}", refId: A }
+                model: { expr: "(sum by (pod) (container_memory_working_set_bytes{namespace=\"otel-demo\", container!=\"\"}) / sum by (pod) (kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"memory\"}) * 100) and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [85] } }], refId: B }
@@ -199,7 +199,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 900, to: 0 }
-                model: { expr: "increase(kube_pod_container_status_restarts_total{namespace=\"otel-demo\"}[15m]) and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}", refId: A }
+                model: { expr: "increase(kube_pod_container_status_restarts_total{namespace=\"otel-demo\"}[15m]) and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [2] } }], refId: B }
@@ -216,7 +216,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "kube_pod_status_phase{namespace=\"otel-demo\", phase!~\"Running|Succeeded\"} and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}", refId: A }
+                model: { expr: "kube_pod_status_phase{namespace=\"otel-demo\", phase!~\"Running|Succeeded\"} and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
@@ -238,7 +238,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", refId: A }
+                model: { expr: "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [80] } }], refId: B }
@@ -255,7 +255,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100", refId: A }
+                model: { expr: "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [80] } }], refId: B }
@@ -272,7 +272,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\", fstype!=\"tmpfs\"} / node_filesystem_size_bytes{mountpoint=\"/\", fstype!=\"tmpfs\"})) * 100", refId: A }
+                model: { expr: "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\", fstype!=\"tmpfs\"} / node_filesystem_size_bytes{mountpoint=\"/\", fstype!=\"tmpfs\"})) * 100", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [80] } }], refId: B }
@@ -289,7 +289,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "sum(kube_node_status_condition{condition=\"Ready\", status=\"true\"} == 0)", refId: A }
+                model: { expr: "sum(kube_node_status_condition{condition=\"Ready\", status=\"true\"} == 0)", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
@@ -315,7 +315,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"cpu\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
+                model: { expr: "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"cpu\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
@@ -332,7 +332,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"cpu\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
+                model: { expr: "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"cpu\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
@@ -349,7 +349,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"memory\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
+                model: { expr: "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"memory\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
@@ -366,7 +366,7 @@ alerting:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"memory\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
+                model: { expr: "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"memory\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", instant: true, range: false, refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
