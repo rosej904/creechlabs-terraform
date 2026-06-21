@@ -68,16 +68,16 @@ datasources:
             datasourceUid: prometheus
             tags:
               - key: 'service.name'
-                value: 'service_name'
+                value: 'service'
             spanTimer:
               metric: 'traces_spanmetrics_latency_count'
             queries:
             - name: 'Request Duration (Heatmap)'
-              query: 'sum(rate(traces_spanmetrics_latency_bucket{$${__tags}"}[5m])) by (le, service)'
+              query: 'sum(rate(traces_spanmetrics_latency_bucket{$${__tags}}[5m])) by (le, service)'
             - name: 'Average Latency'
-              query: 'sum(rate(traces_spanmetrics_latency_sum{$${__tags}"}[5m])) by (service) / sum(rate(traces_spanmetrics_latency_count{service=~"$$service"}[5m])) by (service) * 1000'
+              query: 'sum(rate(traces_spanmetrics_latency_sum{$${__tags}}[5m])) by (service) / sum(rate(traces_spanmetrics_latency_count{$${__tags}}[5m])) by (service) * 1000'
             - name: 'Request Rate'
-              query: 'sum(rate(traces_spanmetrics_calls_total{$${__tags}"}[5m])) by (service)'
+              query: 'sum(rate(traces_spanmetrics_calls_total{$${__tags}}[5m])) by (service)'
               
 alerting:
   slo_burn_rate_alerts.yaml:
