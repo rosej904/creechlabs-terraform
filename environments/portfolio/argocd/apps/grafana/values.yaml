@@ -294,6 +294,7 @@ alerting:
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
   
+  
   app_policy_alerts.yaml:
     apiVersion: 1
     groups:
@@ -305,56 +306,33 @@ alerting:
           - uid: policy-missing-cpu-limit
             title: "Policy - Containers Missing CPU Limit"
             condition: B
-            for: 10m
+            for: 1m
             noDataState: OK
             execErrState: OK
             labels: { severity: ticket, scope: policy }
-            annotations: { summary: "One or more containers have no CPU limit defined" }
-            data:
-              - refId: A
-                datasourceUid: prometheus
-                relativeTimeRange:
-                  from: 300
-                  to: 0
-                model:
-                  expr: "sum by (deployment) ( label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"cpu\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-O0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))"
-                  refId: A
-
-              - refId: B
-                datasourceUid: __expr__
-                model:
-                  type: reduce
-                  expression: A
-                  reducer: last
-                  settings:
-                    mode: strict
-                  refId: B
-
-              - refId: C
-                datasourceUid: __expr__
-                model:
-                  type: threshold
-                  expression: B
-                  conditions:
-                    - evaluator:
-                        type: gt
-                        params: [0]
-                  refId: C
-
-
-          - uid: policy-missing-cpu-request
-            title: "Policy - Containers Missing CPU Request"
-            condition: B
-            for: 10m
-            noDataState: OK
-            execErrState: OK
-            labels: { severity: ticket, scope: policy }
-            annotations: { summary: "One or more containers have no CPU request defined" }
+            annotations: { summary: "Deployment has a container with no CPU limit defined" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "sum by (deployment) (  label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"cpu\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-O0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
+                model: { expr: "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"cpu\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
+              - refId: B
+                datasourceUid: __expr__
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
+
+          - uid: policy-missing-cpu-request
+            title: "Policy - Containers Missing CPU Request"
+            condition: B
+            for: 1m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, scope: policy }
+            annotations: { summary: "Deployment has a container with no CPU request defined" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"cpu\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
@@ -362,16 +340,16 @@ alerting:
           - uid: policy-missing-memory-limit
             title: "Policy - Containers Missing Memory Limit"
             condition: B
-            for: 10m
+            for: 1m
             noDataState: OK
             execErrState: OK
             labels: { severity: ticket, scope: policy }
-            annotations: { summary: "One or more containers have no memory limit defined" }
+            annotations: { summary: "Deployment has a container with no memory limit defined" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "sum by (deployment) (  label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"memory\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-O0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
+                model: { expr: "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"memory\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
@@ -379,16 +357,16 @@ alerting:
           - uid: policy-missing-memory-request
             title: "Policy - Containers Missing Memory Request"
             condition: B
-            for: 10m
+            for: 1m
             noDataState: OK
             execErrState: OK
             labels: { severity: ticket, scope: policy }
-            annotations: { summary: "One or more containers have no memory request defined" }
+            annotations: { summary: "Deployment has a container with no memory request defined" }
             data:
               - refId: A
                 datasourceUid: prometheus
                 relativeTimeRange: { from: 300, to: 0 }
-                model: { expr: "sum by (deployment) (  label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"memory\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-O0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
+                model: { expr: "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"memory\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))", refId: A }
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
