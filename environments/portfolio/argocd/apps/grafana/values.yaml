@@ -293,7 +293,82 @@ alerting:
               - refId: B
                 datasourceUid: __expr__
                 model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
+  
+  app_policy_alerts.yaml:
+    apiVersion: 1
+    groups:
+      - orgId: 1
+        name: app_policy_alerts
+        folder: Policy Alerts
+        interval: 5m
+        rules:
+          - uid: policy-missing-cpu-limit
+            title: "Policy - Containers Missing CPU Limit"
+            condition: B
+            for: 10m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, scope: policy }
+            annotations: { summary: "One or more otel-demo containers have no CPU limit defined" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: "count(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"cpu\"})", refId: A }
+              - refId: B
+                datasourceUid: __expr__
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
 
+          - uid: policy-missing-cpu-request
+            title: "Policy - Containers Missing CPU Request"
+            condition: B
+            for: 10m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, scope: policy }
+            annotations: { summary: "One or more otel-demo containers have no CPU request defined" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: "count(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"cpu\"})", refId: A }
+              - refId: B
+                datasourceUid: __expr__
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
+
+          - uid: policy-missing-memory-limit
+            title: "Policy - Containers Missing Memory Limit"
+            condition: B
+            for: 10m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, scope: policy }
+            annotations: { summary: "One or more otel-demo containers have no memory limit defined" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: "count(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"memory\"})", refId: A }
+              - refId: B
+                datasourceUid: __expr__
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
+
+          - uid: policy-missing-memory-request
+            title: "Policy - Containers Missing Memory Request"
+            condition: B
+            for: 10m
+            noDataState: OK
+            execErrState: OK
+            labels: { severity: ticket, scope: policy }
+            annotations: { summary: "One or more otel-demo containers have no memory request defined" }
+            data:
+              - refId: A
+                datasourceUid: prometheus
+                relativeTimeRange: { from: 300, to: 0 }
+                model: { expr: "count(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"memory\"})", refId: A }
+              - refId: B
+                datasourceUid: __expr__
+                model: { type: threshold, expression: A, conditions: [{ evaluator: { type: gt, params: [0] } }], refId: B }
 
 resources:
   requests:
