@@ -57,14 +57,13 @@ datasources:
             datasourceUid: loki
             spanStartTimeShift: '-2m'
             spanEndTimeShift: '2m'
-            filterByTraceID: true
-            filterBySpanID: true
-            customQuery: false
+            filterByTraceID: false
+            filterBySpanID: false
+            customQuery: true
+            query: '{${__tags}} | trace_id="${__trace.traceId}" | span_id="${__span.spanId}"'
             tags:
               - key: 'service.name'
                 value: 'service_name'
-              - key: 'k8s.deployment.name'
-                value: 'k8s_deployment_name'
           tracesToMetrics:
             datasourceUid: prometheus
             spanTimer:
