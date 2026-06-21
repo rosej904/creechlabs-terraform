@@ -72,8 +72,6 @@ datasources:
             spanTimer:
               metric: 'traces_spanmetrics_latency_count'
             queries:
-            - name: 'Request Duration (Heatmap)'
-              query: 'sum(rate(traces_spanmetrics_latency_bucket{$${__tags}}[5m])) by (le, service)'
             - name: 'Average Latency'
               query: 'sum(rate(traces_spanmetrics_latency_sum{$${__tags}}[5m])) by (service) / sum(rate(traces_spanmetrics_latency_count{$${__tags}}[5m])) by (service) * 1000'
             - name: 'Request Rate'
