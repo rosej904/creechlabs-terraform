@@ -20,6 +20,13 @@ ingress:
   hosts:
     - grafana.creechlabs.dev
 
+feature_toggles:
+  publicDashboards: true
+  traceQLStreaming: true
+security:
+  allow_embedding: true
+  cookie_secure: true
+
 datasources:
   datasources.yaml:
     apiVersion: 1
