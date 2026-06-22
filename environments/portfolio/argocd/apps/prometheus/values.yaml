@@ -69,7 +69,7 @@ prometheus-pushgateway:
 kube-state-metrics:
   enabled: true
   metricLabelsAllowlist:
-    - pods=[slo-errorbudget,slo-latency-p95,pod-health,team]
+    - pods=[slo-errorbudget,slo-latency-p95,pod-health,team,app.kubernetes.io/name]
 
 nodeExporter:
   enabled: true
