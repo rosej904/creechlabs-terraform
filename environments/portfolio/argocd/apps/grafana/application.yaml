@@ -12,6 +12,8 @@ spec:
       helm:
         valueFiles:
           - '$values/environments/portfolio/argocd/apps/grafana/values.yaml'
+          - '$values/environments/portfolio/argocd/apps/grafana/values-datasources.yaml'
+          - '$values/environments/portfolio/argocd/apps/grafana/values-alerting.yaml'
 
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
       targetRevision: feature/observability-config-demo
