@@ -277,7 +277,7 @@ alerting:
             for: 5m
             noDataState: OK
             execErrState: OK
-            labels: { severity: ticket, scope: infra,, group: resource }
+            labels: { severity: ticket, scope: infra, group: resource }
             annotations: { summary: "EKS node root filesystem usage above 80%" }
             data:
               - refId: A
