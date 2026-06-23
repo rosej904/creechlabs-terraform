@@ -4,10 +4,6 @@
   "metadata": {
     "name": "demo-pub",
     "namespace": "default",
-    "uid": "0aa9af61-6f42-47f3-92dc-45a59571f151",
-    "resourceVersion": "1782241603003996",
-    "generation": 1,
-    "creationTimestamp": "2026-06-23T19:06:42Z",
     "labels": {
       "grafana.app/deprecatedInternalID": "2345165915598848"
     },
