@@ -3,7 +3,6 @@ version: 0.2
 phases:
   install:
     commands:
-      # Install Terraform — pin to specific version for reproducibility
       - terraform_version="1.15.4"
       - curl -sLO "https://releases.hashicorp.com/terraform/${terraform_version}/terraform_${terraform_version}_linux_amd64.zip"
       - unzip -q "terraform_${terraform_version}_linux_amd64.zip"
@@ -68,7 +67,7 @@ phases:
       - cd ../../..
 
       # ----------------------------------------------------------
-      # Layer 3 — ArgoCD
+      # Layer 4 — ArgoCD
       # ----------------------------------------------------------
       - echo "=== Applying ArgoCD layer ==="
       - cd environments/portfolio/argocd
@@ -76,6 +75,49 @@ phases:
         terraform init -input=false \
           -backend-config="bucket=$TF_STATE_BUCKET" \
           -backend-config="key=environments/portfolio/argocd/terraform.tfstate" \
+          -backend-config="region=$AWS_REGION" \
+          -backend-config="use_lockfile=true" \
+          -backend-config="encrypt=true"
+      - terraform apply -auto-approve -input=false
+      - cd ../../..
+
+      # ----------------------------------------------------------
+      # Wait for Grafana to be healthy before provisioning org 2 in Grafana
+      # ----------------------------------------------------------
+      - echo "=== Waiting for Grafana to be healthy ==="
+      - aws eks update-kubeconfig --region $AWS_REGION --name ${PROJECT_NAME}-cluster
+      - |
+        echo "Waiting for Grafana deployment to be available..."
+        kubectl wait deployment \
+          --namespace observability \
+          --selector app.kubernetes.io/name=grafana \
+          --for=condition=Available \
+          --timeout=300s
+      - |
+        echo "Waiting for Grafana health endpoint to respond..."
+        for i in $(seq 1 30); do
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://grafana.creechlabs.dev/api/health)
+          if [ "$STATUS" = "200" ]; then
+            echo "Grafana healthy (HTTP 200)"
+            break
+          fi
+          echo "Attempt $i: Grafana not ready yet (HTTP $STATUS), waiting 15s..."
+          sleep 15
+        done
+        if [ "$STATUS" != "200" ]; then
+          echo "ERROR: Grafana did not become healthy after 7.5 minutes"
+          exit 1
+        fi
+
+      # ----------------------------------------------------------
+      # Layer 5 — Grafana (org 2 provisioning)
+      # ----------------------------------------------------------
+      - echo "=== Applying Grafana layer ==="
+      - cd environments/portfolio/grafana
+      - |
+        terraform init -input=false \
+          -backend-config="bucket=$TF_STATE_BUCKET" \
+          -backend-config="key=environments/portfolio/grafana/terraform.tfstate" \
           -backend-config="region=$AWS_REGION" \
           -backend-config="use_lockfile=true" \
           -backend-config="encrypt=true"
