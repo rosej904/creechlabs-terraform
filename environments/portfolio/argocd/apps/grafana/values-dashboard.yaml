@@ -7,7 +7,7 @@ dashboards:
           "kind": "Dashboard",
           "metadata": {
             "name": "demo",
-            "namespace": "org-2"
+            "namespace": "default"
           },
           "spec": {
             "annotations": [
