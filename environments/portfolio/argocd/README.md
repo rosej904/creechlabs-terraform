@@ -27,7 +27,7 @@ GitHub repo → Settings → Deploy keys → Add deploy key
 
 ```hcl
 github_repo_ssh_url         = "git@github.com:YOUR_USERNAME/YOUR_REPO.git"
-ui_admin_password = "your-chosen-password"
+ui_admin_password           = "your-chosen-password"
 ```
 export TF_VAR_argocd_repo_ssh_private_key=$(cat /path/to/your/id_rsa)
 
