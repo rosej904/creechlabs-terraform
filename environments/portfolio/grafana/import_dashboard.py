@@ -41,7 +41,7 @@ def main():
         except urllib.error.HTTPError as e:
             return e.code, e.read().decode()
 
-    dashboard_url = "/apis/dashboard.grafana.app/v2/namespaces/org-2/dashboards"
+    dashboard_url = f"/apis/dashboard.grafana.app/v2/namespaces/org-{org_id}/dashboards"
     status, body = api_call("POST", dashboard_url, data=spec)
     print(f"POST dashboard: HTTP {status}")
 

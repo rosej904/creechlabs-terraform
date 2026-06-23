@@ -14,7 +14,8 @@ spec:
           - '$baseValues/environments/portfolio/argocd/apps/grafana/values.yaml'
           - '$dsValues/environments/portfolio/argocd/apps/grafana/values-datasources.yaml'
           - '$alertValues/environments/portfolio/argocd/apps/grafana/values-alerting.yaml'
-
+          - '$dashboardValues/environments/portfolio/argocd/apps/grafana/values-dashboard.yaml'
+          
     # Base Core Values Reference
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
       targetRevision: feature/observability-config-demo
@@ -29,6 +30,11 @@ spec:
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
       targetRevision: feature/observability-config-demo
       ref: alertValues
+
+    # Dashboard Values Reference
+    - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
+      targetRevision: feature/observability-config-demo
+      ref: dashboardValues
 
   destination:
     server: https://kubernetes.default.svc

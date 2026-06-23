@@ -1,5 +1,7 @@
 # ArgoCD Layer Setup
 
+## NOTE: Helm Chart Value yaml files have hardcoded values
+
 ## One-time manual steps before first apply
 
 ### 1. Generate SSH deploy key
