@@ -10,9 +10,9 @@ spec:
       chart: grafana
       targetRevision: 12.3.0
       helm:
-        - $baseValues/environments/portfolio/argocd/apps/grafana/values.yaml
-        - $dsValues/environments/portfolio/argocd/apps/grafana/values-datasources.yaml
-        - $alertValues/environments/portfolio/argocd/apps/grafana/values-alerting.yaml
+        - '$baseValues/environments/portfolio/argocd/apps/grafana/values.yaml'
+        - '$dsValues/environments/portfolio/argocd/apps/grafana/values-datasources.yaml'
+        - '$alertValues/environments/portfolio/argocd/apps/grafana/values-alerting.yaml'
 
     # Base Core Values Reference
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
