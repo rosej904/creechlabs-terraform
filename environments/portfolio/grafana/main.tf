@@ -60,11 +60,11 @@ resource "grafana_data_source" "loki_pub" {
   json_data_encoded = jsonencode({
     derivedFields = [
       {
-        name            = "TraceID"
-        matcherType     = "label"
-        matcherRegex    = "trace_id"
-        datasourceUid   = grafana_data_source.tempo_pub.uid
-        url             = "$${__value.raw}"
+        name          = "TraceID"
+        matcherType   = "label"
+        matcherRegex  = "trace_id"
+        datasourceUid = "tempo-pub"
+        url           = "$${__value.raw}"
       }
     ]
   })
@@ -81,10 +81,10 @@ resource "grafana_data_source" "tempo_pub" {
   json_data_encoded = jsonencode({
     httpMethod = "POST"
     serviceMap = {
-      datasourceUid = grafana_data_source.prometheus_pub.uid
+      datasourceUid = "prometheus-pub"
     }
     tracesToLogsV2 = {
-      datasourceUid     = grafana_data_source.loki_pub.uid
+      datasourceUid     = "loki-pub"
       spanStartTimeShift = "-2m"
       spanEndTimeShift   = "2m"
       filterByTraceID    = false
@@ -99,7 +99,7 @@ resource "grafana_data_source" "tempo_pub" {
       ]
     }
     tracesToMetrics = {
-      datasourceUid = grafana_data_source.prometheus_pub.uid
+      datasourceUid = "prometheus-pub"
       tags = [
         {
           key   = "service.name"
@@ -122,7 +122,7 @@ resource "grafana_data_source" "tempo_pub" {
     }
   })
 
-  depends_on = [grafana_data_source.prometheus_pub, grafana_data_source.loki_pub]
+  depends_on = [grafana_organization.public]
 }
 
 # ============================================================
@@ -174,8 +174,11 @@ resource "grafana_rule_group" "slo_burn_rate_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 300; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 300
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "service:burnrate5m and on(service) slo:member:errorbudget"
         instant = true
@@ -185,8 +188,11 @@ resource "grafana_rule_group" "slo_burn_rate_pub" {
     }
     data {
       ref_id = "B"
-      relative_time_range { from = 3600; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 3600
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "service:burnrate1h and on(service) slo:member:errorbudget"
         instant = true
@@ -197,7 +203,10 @@ resource "grafana_rule_group" "slo_burn_rate_pub" {
     data {
       ref_id         = "C"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "math"
         expression = "$A > 14.4 && $B > 14.4"
@@ -217,8 +226,11 @@ resource "grafana_rule_group" "slo_burn_rate_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 1800; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 1800
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "service:burnrate30m and on(service) slo:member:errorbudget"
         instant = true
@@ -228,8 +240,11 @@ resource "grafana_rule_group" "slo_burn_rate_pub" {
     }
     data {
       ref_id = "B"
-      relative_time_range { from = 10800; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 10800
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "service:burnrate3h and on(service) slo:member:errorbudget"
         instant = true
@@ -240,7 +255,10 @@ resource "grafana_rule_group" "slo_burn_rate_pub" {
     data {
       ref_id         = "C"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "math"
         expression = "$A > 6 && $B > 6"
@@ -260,8 +278,11 @@ resource "grafana_rule_group" "slo_burn_rate_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 300; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 300
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "service:latency_p95:5m and on(service) slo:member:latency_p95"
         instant = true
@@ -272,7 +293,10 @@ resource "grafana_rule_group" "slo_burn_rate_pub" {
     data {
       ref_id         = "B"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "threshold"
         expression = "A"
@@ -301,8 +325,11 @@ resource "grafana_rule_group" "app_resource_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 300; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 300
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "(sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"otel-demo\", container!=\"\"}[5m])) / sum by (pod) (kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"cpu\"}) * 100) and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}"
         instant = true
@@ -313,7 +340,10 @@ resource "grafana_rule_group" "app_resource_pub" {
     data {
       ref_id         = "B"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "threshold"
         expression = "A"
@@ -334,8 +364,11 @@ resource "grafana_rule_group" "app_resource_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 300; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 300
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "(sum by (pod) (container_memory_working_set_bytes{namespace=\"otel-demo\", container!=\"\"}) / sum by (pod) (kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"memory\"}) * 100) and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}"
         instant = true
@@ -346,7 +379,10 @@ resource "grafana_rule_group" "app_resource_pub" {
     data {
       ref_id         = "B"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "threshold"
         expression = "A"
@@ -367,8 +403,11 @@ resource "grafana_rule_group" "app_resource_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 900; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 900
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "increase(kube_pod_container_status_restarts_total{namespace=\"otel-demo\"}[15m]) and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}"
         instant = true
@@ -379,7 +418,10 @@ resource "grafana_rule_group" "app_resource_pub" {
     data {
       ref_id         = "B"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "threshold"
         expression = "A"
@@ -400,8 +442,11 @@ resource "grafana_rule_group" "app_resource_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 300; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 300
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "kube_pod_status_phase{namespace=\"otel-demo\", phase!~\"Running|Succeeded\"} and on(pod) kube_pod_labels{namespace=\"otel-demo\", label_pod_health=\"true\"}"
         instant = true
@@ -412,7 +457,10 @@ resource "grafana_rule_group" "app_resource_pub" {
     data {
       ref_id         = "B"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "threshold"
         expression = "A"
@@ -441,8 +489,11 @@ resource "grafana_rule_group" "infra_resource_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 300; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 300
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)"
         instant = true
@@ -453,7 +504,10 @@ resource "grafana_rule_group" "infra_resource_pub" {
     data {
       ref_id         = "B"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "threshold"
         expression = "A"
@@ -474,8 +528,11 @@ resource "grafana_rule_group" "infra_resource_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 300; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 300
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100"
         instant = true
@@ -486,7 +543,10 @@ resource "grafana_rule_group" "infra_resource_pub" {
     data {
       ref_id         = "B"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "threshold"
         expression = "A"
@@ -507,8 +567,11 @@ resource "grafana_rule_group" "infra_resource_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 300; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 300
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\", fstype!=\"tmpfs\"} / node_filesystem_size_bytes{mountpoint=\"/\", fstype!=\"tmpfs\"})) * 100"
         instant = true
@@ -519,7 +582,10 @@ resource "grafana_rule_group" "infra_resource_pub" {
     data {
       ref_id         = "B"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "threshold"
         expression = "A"
@@ -540,8 +606,11 @@ resource "grafana_rule_group" "infra_resource_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 300; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 300
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "sum(kube_node_status_condition{condition=\"Ready\", status=\"true\"} == 0)"
         instant = true
@@ -552,7 +621,10 @@ resource "grafana_rule_group" "infra_resource_pub" {
     data {
       ref_id         = "B"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "threshold"
         expression = "A"
@@ -581,8 +653,11 @@ resource "grafana_rule_group" "policy_alerts_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 300; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 300
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"cpu\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))"
         instant = true
@@ -593,7 +668,10 @@ resource "grafana_rule_group" "policy_alerts_pub" {
     data {
       ref_id         = "B"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "threshold"
         expression = "A"
@@ -614,8 +692,11 @@ resource "grafana_rule_group" "policy_alerts_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 300; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 300
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"cpu\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))"
         instant = true
@@ -626,7 +707,10 @@ resource "grafana_rule_group" "policy_alerts_pub" {
     data {
       ref_id         = "B"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "threshold"
         expression = "A"
@@ -647,8 +731,11 @@ resource "grafana_rule_group" "policy_alerts_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 300; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 300
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_limits{namespace=\"otel-demo\", resource=\"memory\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))"
         instant = true
@@ -659,7 +746,10 @@ resource "grafana_rule_group" "policy_alerts_pub" {
     data {
       ref_id         = "B"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "threshold"
         expression = "A"
@@ -680,8 +770,11 @@ resource "grafana_rule_group" "policy_alerts_pub" {
 
     data {
       ref_id = "A"
-      relative_time_range { from = 300; to = 0 }
-      datasource_uid = grafana_data_source.prometheus_pub.uid
+      relative_time_range {
+      from = 300
+      to   = 0
+    }
+      datasource_uid = "prometheus-pub"
       model = jsonencode({
         expr    = "sum by (deployment) (label_replace(kube_pod_container_status_running{namespace=\"otel-demo\"} unless on(namespace, pod, container) kube_pod_container_resource_requests{namespace=\"otel-demo\", resource=\"memory\"}, \"deployment\", \"$1\", \"pod\", \"([a-zA-Z0-9-]+?)-[a-z0-9]+-[a-z0-9]+\"))"
         instant = true
@@ -692,7 +785,10 @@ resource "grafana_rule_group" "policy_alerts_pub" {
     data {
       ref_id         = "B"
       datasource_uid = "__expr__"
-      relative_time_range { from = 0; to = 0 }
+      relative_time_range {
+      from = 0
+      to   = 0
+    }
       model = jsonencode({
         type       = "threshold"
         expression = "A"
@@ -721,17 +817,17 @@ resource "null_resource" "demo_dashboard_pub" {
   provisioner "local-exec" {
     command = <<-EOT
       DASHBOARD_JSON=$(cat '${path.module}/dashboard.json')
-      HTTP_STATUS=$(curl -s -o /tmp/dashboard_result.json -w "%{http_code}" \
+      HTTP_STATUS=$(curl -s -o /tmp/dashboard_result.json -w "%%{http_code}" \
         -X POST \
         -H "Content-Type: application/json" \
         -H "X-Grafana-Org-Id: ${grafana_organization.public.org_id}" \
         -u 'admin:${var.grafana_admin_password}' \
         '${var.grafana_url}/api/dashboards/db' \
-        -d "{\"dashboard\": $DASHBOARD_JSON, \"overwrite\": true, \"folderId\": 0}")
-      echo "HTTP Status: $HTTP_STATUS"
+        -d "{\"dashboard\": $${DASHBOARD_JSON}, \"overwrite\": true, \"folderId\": 0}")
+      echo "HTTP Status: $${HTTP_STATUS}"
       cat /tmp/dashboard_result.json
-      if [ "$HTTP_STATUS" != "200" ]; then
-        echo "ERROR: Dashboard import failed with HTTP $HTTP_STATUS"
+      if [ "$${HTTP_STATUS}" != "200" ]; then
+        echo "ERROR: Dashboard import failed with HTTP $${HTTP_STATUS}"
         exit 1
       fi
     EOT
