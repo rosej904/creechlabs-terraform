@@ -84,7 +84,42 @@ datasources:
               query: 'sum(rate(traces_spanmetrics_latency_sum{$${__tags}}[5m])) by (service) / sum(rate(traces_spanmetrics_latency_count{$${__tags}}[5m])) by (service) * 1000'
             - name: 'Request Rate'
               query: 'sum(rate(traces_spanmetrics_calls_total{$${__tags}}[5m])) by (service)'
-              
+
+dashboardProviders:
+  dashboardproviders.yaml:
+    apiVersion: 1
+    providers:
+      - name: 'slo-alerts'
+        orgId: 1
+        folder: 'SLO Alerts'
+        folderUid: 'slo-alerts-folder'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/slo-alerts
+
+      - name: 'resource-alerts'
+        orgId: 1
+        folder: 'Resource Alerts'
+        folderUid: 'resource-alerts-folder'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/resource-alerts
+
+      - name: 'policy-alerts'
+        orgId: 1
+        folder: 'Policy Alerts'
+        folderUid: 'policy-alerts-folder'
+        type: file
+        disableDeletion: false
+        editable: true
+        options:
+          path: /var/lib/grafana/dashboards/policy-alerts
+
+
 alerting:
   slo_burn_rate_alerts.yaml:
     apiVersion: 1
