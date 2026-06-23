@@ -2,7 +2,9 @@
   "dashboard": {
     "apiVersion": "dashboard.grafana.app/v2",
     "kind": "Dashboard",
-    "metadata": {},
+    "metadata": {
+      "name": "demo-pub"
+    },
     "spec": {
       "annotations": [
         {
@@ -4119,7 +4121,5 @@
         }
       ]
     }
-  },
-  "overwrite": true,
-  "folderId": 0
+  }
 }
