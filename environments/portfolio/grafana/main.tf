@@ -815,22 +815,7 @@ resource "null_resource" "demo_dashboard_pub" {
   }
 
   provisioner "local-exec" {
-    command = <<-EOT
-      DASHBOARD_JSON=$(cat '${path.module}/dashboard.json')
-      HTTP_STATUS=$(curl -s -o /tmp/dashboard_result.json -w "%%{http_code}" \
-        -X POST \
-        -H "Content-Type: application/json" \
-        -H "X-Grafana-Org-Id: ${grafana_organization.public.org_id}" \
-        -u 'admin:${var.grafana_admin_password}' \
-        '${var.grafana_url}/apis/dashboard.grafana.app/v2/namespaces/default/dashboards' \
-        -d "{\"dashboard\": $${DASHBOARD_JSON}, \"overwrite\": true, \"folderId\": 0}")
-      echo "HTTP Status: $${HTTP_STATUS}"
-      cat /tmp/dashboard_result.json
-      if [ "$${HTTP_STATUS}" != "200" ]; then
-        echo "ERROR: Dashboard import failed with HTTP $${HTTP_STATUS}"
-        exit 1
-      fi
-    EOT
+    command     = "python3 '${path.module}/import_dashboard.py' '${var.grafana_url}' '${grafana_organization.public.org_id}' 'admin' '${var.grafana_admin_password}' '${path.module}/dashboard.json'"
   }
 
   depends_on = [
