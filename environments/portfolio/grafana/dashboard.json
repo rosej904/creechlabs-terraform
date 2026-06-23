@@ -3,7 +3,8 @@
     "apiVersion": "dashboard.grafana.app/v2",
     "kind": "Dashboard",
     "metadata": {
-      "name": "demo-pub"
+      "name": "demo-pub",
+      "namespace": "default"
     },
     "spec": {
       "annotations": [

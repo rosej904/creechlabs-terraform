@@ -822,7 +822,7 @@ resource "null_resource" "demo_dashboard_pub" {
         -H "Content-Type: application/json" \
         -H "X-Grafana-Org-Id: ${grafana_organization.public.org_id}" \
         -u 'admin:${var.grafana_admin_password}' \
-        '${var.grafana_url}/api/dashboards/db' \
+        '${var.grafana_url}/apis/dashboard.grafana.app/v2/namespaces/default/dashboards' \
         -d "{\"dashboard\": $${DASHBOARD_JSON}, \"overwrite\": true, \"folderId\": 0}")
       echo "HTTP Status: $${HTTP_STATUS}"
       cat /tmp/dashboard_result.json
