@@ -92,6 +92,7 @@ alerting:
       - orgId: 1
         name: slo_burn_rate_alerts
         folder: SLO Alerts
+        folderUID: slo-alerts-folder
         interval: 1m
         rules:
           - uid: slo-fast-burn-dynamic
@@ -159,6 +160,7 @@ alerting:
       - orgId: 1
         name: app_resource_alerts
         folder: Resource Alerts
+        folderUID: resource-alerts-folder
         interval: 1m
         rules:
           - uid: app-high-cpu-usage-dynamic
@@ -232,6 +234,7 @@ alerting:
       - orgId: 1
         name: infra_resource_alerts
         folder: Resource Alerts
+        folderUID: resource-alerts-folder
         interval: 1m
         rules:
           - uid: infra-node-high-cpu
@@ -309,6 +312,7 @@ alerting:
       - orgId: 1
         name: app_policy_alerts
         folder: Policy Alerts
+        folderUID: policy-alerts-folder
         interval: 5m
         rules:
           - uid: policy-missing-cpu-limit
