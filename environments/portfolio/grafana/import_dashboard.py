@@ -35,7 +35,7 @@ def main():
         "spec": spec
     }
 
-    payload = json.dumps(envelope).encode("utf-8")
+    payload = json.dumps(spec).encode("utf-8")
 
     # Build request
     url = f"{grafana_url}/apis/dashboard.grafana.app/v2/namespaces/default/dashboards"
