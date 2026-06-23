@@ -41,14 +41,6 @@ def main():
         except urllib.error.HTTPError as e:
             return e.code, e.read().decode()
 
-    # Step 1: Switch admin user context to target org
-    status, body = api_call("POST", f"/api/user/using/{org_id}")
-    print(f"Switch to org {org_id}: HTTP {status}")
-    if status != 200:
-        print(f"ERROR: Could not switch org: {body}")
-        sys.exit(1)
-
-    # Step 2: POST dashboard (now in org 2 context)
     dashboard_url = "/apis/dashboard.grafana.app/v2/namespaces/default/dashboards"
     status, body = api_call("POST", dashboard_url, data=spec)
     print(f"POST dashboard: HTTP {status}")
