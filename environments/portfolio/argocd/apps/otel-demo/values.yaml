@@ -91,6 +91,7 @@ components:
         alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
         alb.ingress.kubernetes.io/ssl-redirect: '443'
         alb.ingress.kubernetes.io/group.name: portfolio
+        alb.ingress.kubernetes.io/custom-response-headers: '{"Content-Security-Policy": "frame-ancestors \x27self\x27 https://creechlabs.dev"}'
       hosts:
         - host: otel-demo.creechlabs.dev
           paths:
