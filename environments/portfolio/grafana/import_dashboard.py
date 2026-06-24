@@ -22,6 +22,9 @@ def main():
 
     credentials = base64.b64encode(f"{admin_user}:{admin_pass}".encode()).decode()
 
+    if org_id != "default":
+        org_id = f"org-{org_id}"
+
     with open(dashboard_path, "r") as f:
         spec = json.load(f)
 
@@ -34,7 +37,7 @@ def main():
         "kind": "Dashboard",
         "metadata": {
             "name": "demo-pub",
-            "namespace": f"org-{org_id}"
+            "namespace": f"{org_id}"
         },
         "spec": spec
     }
@@ -75,7 +78,7 @@ def main():
     # ----------------------------------------------------------------
     # Import dashboard
     # ----------------------------------------------------------------
-    dashboard_url = f"/apis/dashboard.grafana.app/v2/namespaces/org-{org_id}/dashboards"
+    dashboard_url = f"/apis/dashboard.grafana.app/v2/namespaces/{org_id}/dashboards"
     status, body = api_call("POST", dashboard_url, data=payload)
     print(f"POST dashboard: HTTP {status}")
 
