@@ -78,8 +78,6 @@ components:
         cpu: 15m
 
   frontend-proxy:
-    config:
-      contentSecurityPolicy: "base-uri 'self'; frame-ancestors 'self' https://creechlabs.dev;"
     service:
       type: ClusterIP
     ingress:
