@@ -81,7 +81,7 @@ config:
       actions:
         - action: insert
           key: loki.resource.labels
-          value: k8s.namespace.name, k8s.pod.name, k8s.deployment.name
+          value: k8s.namespace.name, k8s.pod.name, k8s.deployment.name, service.name
 
   service:
     pipelines:

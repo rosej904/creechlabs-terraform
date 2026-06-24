@@ -1,0 +1,56 @@
+datasources:
+  datasources.yaml:
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus
+        access: proxy
+        url: http://prometheus-server.observability.svc.cluster.local
+        isDefault: true
+
+      - name: Loki
+        type: loki
+        uid: loki
+        access: proxy
+        url: http://loki.observability.svc.cluster.local:3100
+        jsonData:
+          derivedFields:
+            - name: TraceID
+              matcherType: label
+              matcherRegex: trace_id
+              datasourceUid: tempo
+              url: '$${__value.raw}'
+
+      - name: Tempo
+        type: tempo
+        uid: tempo
+        access: proxy
+        url: http://tempo.observability.svc.cluster.local:3200
+        jsonData:
+          httpMethod: GET
+          serviceMap:
+            datasourceUid: prometheus
+          tracesToLogsV2:
+            datasourceUid: loki
+            spanStartTimeShift: '-2m'
+            spanEndTimeShift: '2m'
+            filterByTraceID: false
+            filterBySpanID: false
+            customQuery: true
+            query: '{$${__tags}} | trace_id="$${__trace.traceId}" | span_id="$${__span.spanId}"'
+            tags:
+              - key: 'k8s.deployment.name'
+                value: 'k8s_deployment_name'
+          tracesToMetrics:
+            datasourceUid: prometheus
+            tags:
+              - key: 'service.name'
+                value: 'service'
+            spanTimer:
+              metric: 'traces_spanmetrics_latency_count'
+            queries:
+            - name: 'Average Latency'
+              query: 'sum(rate(traces_spanmetrics_latency_sum{$${__tags}}[5m])) by (service) / sum(rate(traces_spanmetrics_latency_count{$${__tags}}[5m])) by (service) * 1000'
+            - name: 'Request Rate'
+              query: 'sum(rate(traces_spanmetrics_calls_total{$${__tags}}[5m])) by (service)'
