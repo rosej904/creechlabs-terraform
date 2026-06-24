@@ -14,8 +14,9 @@ export default function InfraDetail({ status, loading, error }) {
 
       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-6">
         Everything here is provisioned with Terraform across layered state
-        files, deployed via ArgoCD using a GitOps app-of-apps pattern. The
-        EKS cluster and its workloads are destroyed every evening and
+        files, deployed via CodeBuild, and triggered by EventBridge scedhuled. 
+        The applications in the cluster are deployed vi ArgoCD (ArgoCD deployed via terraform) using a GitOps app-of-apps pattern. The
+        EKS cluster, its workloads, and all other infrastructure (ALBs, VPCs, Subnets, Routes, ASGs, etc) are destroyed every evening and
         rebuilt every weekday morning — the status below reflects that
         cycle in real time, not a static snapshot.
       </p>

@@ -2,7 +2,7 @@ export default function Footer() {
   return (
     <footer className="mt-4 pt-6 border-t border-[var(--color-border)] flex flex-col sm:flex-row items-center justify-between gap-3">
       <p className="text-xs text-[var(--color-text-tertiary)]">
-        Jordan Creech — built with Terraform, EKS, and React. Hosted on S3 + CloudFront.
+        Jordan Creech Rose
       </p>
       <div className="flex items-center gap-4">
         <a

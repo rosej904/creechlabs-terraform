@@ -1,30 +1,31 @@
 const PLACEHOLDER_POSTS = [
   {
-    title: 'Why I correlate traces to logs instead of just dashboards',
-    date: 'Placeholder date',
+    title: 'The Real Challlenges of User Enablement',
     excerpt:
-      'Placeholder excerpt — a few sentences on the reasoning behind the Tempo-to-Loki link setup and why it matters for debugging.',
+      'Stay Tuned!',
   },
   {
-    title: 'Destroying my cluster every night on purpose',
-    date: 'Placeholder date',
+    title: 'Centralized Observability vs Culture',
     excerpt:
-      'Placeholder excerpt — notes on the cost/learning tradeoffs of a nightly destroy/rebuild cycle for a demo environment.',
+      'Stay Tuned!',
   },
   {
-    title: 'Getting ArgoCD app-of-apps right',
-    date: 'Placeholder date',
+    title: 'High Cardinality Data & Standardization from hundreds of sources',
     excerpt:
-      'Placeholder excerpt — patterns that worked, patterns that didn\u2019t, for managing many ArgoCD child apps from one root.',
+      'Stay Tuned!',
   },
+    {
+    title: 'Enabling the Dev: SRE & Observability-as-a-Service',
+    excerpt:
+      'Stay Tuned!',
+  }
 ]
 
 export default function NotesDetail() {
   return (
     <div>
       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-6">
-        Short write-ups on observability, infrastructure, and what building
-        this project taught me. Placeholder content for now.
+        Here I share my thoughts, real experiences, and challenges with modernizing observability.
       </p>
 
       <div className="space-y-4">

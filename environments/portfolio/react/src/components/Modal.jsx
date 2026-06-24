@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 
-export default function Modal({ title, onClose, children }) {
+export default function Modal({ title, onClose, children, wide = false }) {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
@@ -28,7 +28,7 @@ export default function Modal({ title, onClose, children }) {
       onClick={onClose}
     >
       <div
-        className={`bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl w-full max-w-5xl my-8 flex flex-col max-h-[calc(100vh-4rem)] transition-all duration-200 ${
+        className={`bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl w-full ${wide ? 'max-w-[95vw]' : 'max-w-5xl'} my-8 flex flex-col max-h-[calc(100vh-4rem)] transition-all duration-200 ${
           visible ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
         }`}
         onClick={(e) => e.stopPropagation()}
@@ -38,9 +38,9 @@ export default function Modal({ title, onClose, children }) {
           <button
             onClick={onClose}
             aria-label="Close"
-            className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] p-1"
+            className="w-8 h-8 flex items-center justify-center rounded-lg bg-[var(--color-bg)] border border-[var(--color-border)] text-[var(--color-text-secondary)]  hover:text-[var(--color-text-primary)] hover:border-[var(--color-accent)] transition-colors shrink-0"
           >
-            <i className="ti ti-x text-xl" aria-hidden="true" />
+            <i className="ti ti-x text-base" aria-hidden="true" />
           </button>
         </div>
         <div className="p-6 overflow-y-auto">{children}</div>

@@ -1,19 +1,19 @@
 const ROADMAP_ITEMS = [
   {
-    title: 'Shared deployment IAM role',
-    detail: 'cl-portfolio-deployer — one assumable role for CodeBuild and local dev, replacing separate per-principal EKS access entries.',
+    title: 'More Opensource!',
+    detail: 'Pyroscope - continous profiling, Grafana Alloy - Grafana Labs otel distribution, OpenCost - Real time cost observability',
   },
   {
-    title: 'ArgoCD ApplicationSet',
-    detail: 'Replace hardcoded branch references in child application.yaml files so target revision is inherited from the root app.',
+    title: 'LLM + MCP',
+    detail: 'On-site observability chatbot powered by Claude (potentially other LLMs) and a Grafana MCP server deployed in-cluster — ask natural language questions about live metrics, logs, traces, and alerts.',
   },
   {
-    title: 'GitHub Actions deploy pipeline',
-    detail: 'Keyless OIDC-based deploy for this frontend, replacing the manual aws s3 sync workflow.',
+    title: 'Enhance Portability of this Project',
+    detail: 'This project started as a personal testing environment and has evolved into a semi-production grade environment. The plan is to feature flag out some components to make the project more portable.',
   },
   {
-    title: 'otel-demo destroy fix',
-    detail: 'Explicitly delete LoadBalancer-type services before networking teardown to avoid orphaned ALBs.',
+    title: 'IDP / SSO',
+    detail: 'Keycloak deployed in-cluster as an open source OIDC identity provider, with ArgoCD and Grafana federated via OAuth2 for single sign-on and role-based access control.',
   },
 ]
 
@@ -21,8 +21,7 @@ export default function RoadmapDetail() {
   return (
     <div>
       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-6">
-        Placeholder roadmap — things queued up for this project, roughly in
-        the order I plan to get to them.
+        What I'm working on now:
       </p>
 
       <div className="space-y-3">

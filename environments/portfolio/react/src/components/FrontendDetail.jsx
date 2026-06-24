@@ -6,15 +6,10 @@ export default function FrontendDetail() {
       <DiagramImage name="frontend" variant="full" className="w-full mb-6" alt="Frontend architecture diagram" />
 
       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-4">
-        Placeholder elaboration — a push to the Terraform repo doesn't deploy
-        anything directly. CodeBuild picks up scheduled applies on weekday
-        mornings, and ArgoCD continuously reconciles the cluster against
-        what's defined in Git using an app-of-apps pattern.
+        This frontend site is fully decoupled from this project. It is deployed as a static site on S3 fronted by CloudFront.
       </p>
       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-6">
-        Placeholder elaboration — notes on why GitOps over a push-based
-        pipeline, and how the destroy/rebuild cycle interacts with ArgoCD's
-        reconciliation loop.
+        Real infra/app status is checked and displayed via local function that calls back to a lambda function via cloudfront and api gateway. Then content is logically rendered based on whether resources are available.
       </p>
 
       <div className="border-t border-[var(--color-border)] pt-5">

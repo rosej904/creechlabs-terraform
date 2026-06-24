@@ -6,15 +6,14 @@ export default function DevopsDetail() {
       <DiagramImage name="devops" variant="full" className="w-full mb-6" alt="DevOps and delivery architecture diagram" />
 
       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-4">
-        Placeholder elaboration — a push to the Terraform repo doesn't deploy
-        anything directly. CodeBuild picks up scheduled applies on weekday
-        mornings, and ArgoCD continuously reconciles the cluster against
-        what's defined in Git using an app-of-apps pattern.
+        ArgoCD is Deployed and fully configured via Terraform/Helm and continuously reconciles the cluster against
+        what's defined in source using an app-of-apps pattern and GitOps practices. ArgoCD, all applications, kubernetes resources
+        are included in the daily teardown.
       </p>
       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-6">
-        Placeholder elaboration — notes on why GitOps over a push-based
-        pipeline, and how the destroy/rebuild cycle interacts with ArgoCD's
-        reconciliation loop.
+        EKS Infra/App layer stands up the external DNS and AWS LBC commponents to 
+        automatically detect ingress resources that are created/updated during ArgoCD state sync to provision ALB, 
+        corresponding CNAME records in Cloudflare, and sync ACM certs.
       </p>
 
       <div className="border-t border-[var(--color-border)] pt-5">
@@ -22,7 +21,7 @@ export default function DevopsDetail() {
           Stack
         </p>
         <div className="flex flex-wrap gap-2">
-          {['GitHub', 'CodeBuild', 'EventBridge', 'ArgoCD', 'Helm'].map((tag) => (
+          {['GitHub', 'CodeBuild', 'Terraform', 'ArgoCD', 'Helm', 'Cloudflare', 'External DNS', 'AWS LBC'].map((tag) => (
             <span
               key={tag}
               className="text-xs bg-[var(--color-bg)] border border-[var(--color-border)] rounded-md px-2.5 py-1 text-[var(--color-text-secondary)]"
