@@ -23,6 +23,19 @@ phases:
   build:
     commands:
 
+      # Grafana Layer — Grafana
+      - echo "=== Destroying Grafana layer ==="
+      - cd environments/portfolio/grafana
+      - |
+        terraform init -input=false \
+          -backend-config="bucket=$TF_STATE_BUCKET" \
+          -backend-config="key=environments/portfolio/grafana/terraform.tfstate" \
+          -backend-config="region=$AWS_REGION" \
+          -backend-config="use_lockfile=true" \
+          -backend-config="encrypt=true"
+      - terraform destroy -auto-approve -input=false
+      - cd ../../..
+
       # Argo Layer — ArgoCD
       - echo "=== Destroying ArgoCD layer ==="
       - cd environments/portfolio/argocd

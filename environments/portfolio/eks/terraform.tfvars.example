@@ -6,3 +6,4 @@ node_desired_count  = 3
 node_min_count      = 2
 node_max_count      = 4
 use_spot_instances  = false
+eks_admin_users = ["awsUserName"]

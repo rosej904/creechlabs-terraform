@@ -20,61 +20,23 @@ ingress:
   hosts:
     - grafana.creechlabs.dev
 
-datasources:
-  datasources.yaml:
-    apiVersion: 1
-    datasources:
-      - name: Prometheus
-        type: prometheus
-        uid: prometheus
-        access: proxy
-        url: http://prometheus-server.observability.svc.cluster.local
-        isDefault: true
-
-      - name: Loki
-        type: loki
-        uid: loki
-        access: proxy
-        url: http://loki.observability.svc.cluster.local:3100
-        jsonData:
-          derivedFields:
-            - name: TraceID
-              matcherType: label
-              matcherRegex: trace_id
-              datasourceUid: tempo
-              url: '$${__value.raw}'
-
-      - name: Tempo
-        type: tempo
-        uid: tempo
-        access: proxy
-        url: http://tempo.observability.svc.cluster.local:3200
-        jsonData:
-          httpMethod: GET
-          serviceMap:
-            datasourceUid: prometheus
-          tracesToLogsV2:
-            datasourceUid: loki
-            spanStartTimeShift: '-2m'
-            spanEndTimeShift: '2m'
-            filterByTraceID: true
-            filterBySpanID: true
-            customQuery: false
-            tags:
-              - key: 'service.name'
-                value: 'service_name'
-              - key: 'k8s.deployment.name'
-                value: 'k8s_deployment_name'
-          tracesToMetrics:
-            datasourceUid: prometheus
-            spanTimer:
-              metric: 'http_server_request_duration_seconds_count'
-            queries:
-            - name: 'Request Duration (Heatmap)'
-              query: 'sum(rate(http_server_request_duration_seconds_bucket{service_name=~"($service_name|.+)"}[5m])) by (le, service_name)'
-            - name: 'Average Latency'
-              query: 'sum(rate(http_server_request_duration_seconds_sum{service_name=~"($service_name|.+)"}[5m])) by (service_name) / sum(rate(http_server_request_duration_seconds_count{service_name=~"($service_name|.+)"}[5m])) by (service_name) * 1000'
-              
+grafana.ini:
+  server:
+    root_url: https://grafana.creechlabs.dev
+    serve_from_sub_path: false
+  feature_toggles:
+    publicDashboards: true
+    traceQLStreaming: true
+  security:
+    allow_embedding: true
+    cookie_secure: true
+  auth.anonymous:
+    enabled: true
+    org_name: Public
+    org_role: Viewer
+    hide_version: true
+  auth:
+    disable_login_form: false
 
 resources:
   requests:

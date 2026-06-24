@@ -1,4 +1,3 @@
-#Replace with cloudflare token - only need if running locally since codebuild will pull from env var
 cloudflare_api_token   = "abc123456"
 domain_name            = "domain.com"
 external_dns_version   = "1.21.1"

@@ -1,6 +1,5 @@
 # ------------------------------------------------------------
-# Observability namespace — shared by Grafana, Prometheus
-# (Loki and Tempo use their own namespaces per otel-gateway config)
+# Observability namespace Secret
 # ------------------------------------------------------------
 resource "kubernetes_namespace" "observability" {
   metadata {

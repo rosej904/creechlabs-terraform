@@ -1,6 +1,8 @@
 project_name          = "cl-portfolio"
 aws_region            = "us-east-1"
 state_bucket_name     = "cl-portfolio-tf-state-YOUR_ACCOUNT_ID"
-state_lock_table_name = "cl-portfolio-tf-locks"
-github_repo_url       = "https://github.com/YOUR_USERNAME/YOUR_REPO"
-cloudflare_api_token  = "abc123"
+github_repo_url       = "https://github.com/rosej904/creechlabs-terraform.git"
+github_branch         = "main"
+schedules_enabled     = true
+cloudflare_api_token  = "token"
+ui_admin_password     = "password"

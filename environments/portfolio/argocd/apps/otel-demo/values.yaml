@@ -19,9 +19,63 @@ default:
 
 components:
   frontend:
+    podLabels:
+      slo-errorbudget: "true"
+      slo-latency-p95: "true"
+      pod-health: "true"
+      team: "app_team_name"
     envOverrides:
       - name: PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT
         value: http://otel-gateway-opentelemetry-collector.observability.svc.cluster.local:4318/v1/traces
+    resources:
+      limits:
+        memory: 250Mi
+        cpu: 50m
+      requests:
+        memory: 250Mi
+        cpu: 20m
+
+  product-catalog:
+    podLabels:
+      slo-errorbudget: "true"
+      slo-latency-p95: "true"
+      pod-health: "true"
+      team: "app_team_name"
+    resources:
+      limits:
+        memory: 250Mi
+        cpu: 40m
+      requests:
+        memory: 250Mi
+        cpu: 15m
+
+  recommendation:
+    podLabels:
+      slo-errorbudget: "true"
+      slo-latency-p95: "true"
+      pod-health: "true"
+      team: "app_team_name"
+    resources:
+      limits:
+        memory: 250Mi
+        cpu: 40m
+      requests:
+        memory: 250Mi
+        cpu: 15m
+
+  checkout:
+    podLabels:
+      slo-errorbudget: "true"
+      slo-latency-p95: "true"
+      pod-health: "true"
+      team: "app_team_name"
+    resources:
+      limits:
+        memory: 250Mi
+        cpu: 40m
+      requests:
+        memory: 250Mi
+        cpu: 15m
 
   frontend-proxy:
     service:
