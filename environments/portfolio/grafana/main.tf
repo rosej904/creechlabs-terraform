@@ -818,6 +818,10 @@ resource "null_resource" "demo_dashboard_pub" {
     command     = "python3 '${path.module}/import_dashboard.py' '${var.grafana_url}' '${grafana_organization.public.org_id}' 'admin' '${var.ui_admin_password}' '${path.module}/dashboard.json'"
   }
 
+  provisioner "local-exec" {
+    command     = "python3 '${path.module}/import_dashboard.py' '${var.grafana_url}' '1' 'admin' '${var.ui_admin_password}' '${path.module}/dashboard.json'"
+  }
+
   depends_on = [
     grafana_data_source.prometheus_pub,
     grafana_data_source.loki_pub,
