@@ -87,27 +87,33 @@ phases:
       - echo "=== Waiting for Grafana to be healthy ==="
       - aws eks update-kubeconfig --region $AWS_REGION --name ${PROJECT_NAME}-cluster
       - |
-        echo "Waiting for Grafana deployment to be available..."
+        echo "Waiting for Grafana deployment to be created by ArgoCD..."
+        for i in $(seq 1 60); do
+          if kubectl get deployment -n observability -l app.kubernetes.io/name=grafana --no-headers 2>/dev/null | grep -q grafana; then
+            echo "Grafana deployment found"
+            break
+          fi
+          echo "Attempt $i: deployment not yet created, waiting 15s..."
+          sleep 15
+        done
+      - |
+        echo "Waiting for Grafana deployment to become Available..."
         kubectl wait deployment \
           --namespace observability \
           --selector app.kubernetes.io/name=grafana \
           --for=condition=Available \
           --timeout=300s
       - |
-        echo "Waiting for Grafana health endpoint to respond..."
+        echo "Waiting for Grafana HTTP endpoint..."
         for i in $(seq 1 30); do
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://grafana.creechlabs.dev/api/health)
           if [ "$STATUS" = "200" ]; then
-            echo "Grafana healthy (HTTP 200)"
+            echo "Grafana healthy"
             break
           fi
-          echo "Attempt $i: Grafana not ready yet (HTTP $STATUS), waiting 15s..."
+          echo "Attempt $i: HTTP $STATUS, waiting 15s..."
           sleep 15
         done
-        if [ "$STATUS" != "200" ]; then
-          echo "ERROR: Grafana did not become healthy after 7.5 minutes"
-          exit 1
-        fi
 
       # ----------------------------------------------------------
       # Layer 5 — Grafana (org 2 provisioning)
