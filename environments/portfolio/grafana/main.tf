@@ -15,7 +15,7 @@ terraform {
 
 provider "grafana" {
   url  = var.grafana_url
-  auth = "admin:${var.grafana_admin_password}"
+  auth = "admin:${var.ui_admin_password}"
 }
 
 # ============================================================
@@ -30,7 +30,7 @@ resource "grafana_organization" "public" {
 provider "grafana" {
   alias  = "public_org"
   url    = var.grafana_url
-  auth   = "admin:${var.grafana_admin_password}"
+  auth   = "admin:${var.ui_admin_password}"
   org_id = grafana_organization.public.org_id
 }
 
@@ -815,7 +815,7 @@ resource "null_resource" "demo_dashboard_pub" {
   }
 
   provisioner "local-exec" {
-    command     = "python3 '${path.module}/import_dashboard.py' '${var.grafana_url}' '${grafana_organization.public.org_id}' 'admin' '${var.grafana_admin_password}' '${path.module}/dashboard.json'"
+    command     = "python3 '${path.module}/import_dashboard.py' '${var.grafana_url}' '${grafana_organization.public.org_id}' 'admin' '${var.ui_admin_password}' '${path.module}/dashboard.json'"
   }
 
   depends_on = [

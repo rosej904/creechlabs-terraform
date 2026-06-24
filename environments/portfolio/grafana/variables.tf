@@ -4,7 +4,7 @@ variable "grafana_url" {
   default     = "https://grafana.creechlabs.dev"
 }
 
-variable "grafana_admin_password" {
+variable "ui_admin_password" {
   description = "Grafana admin password — pulled AWS Secrets Manager"
   type        = string
   sensitive   = true

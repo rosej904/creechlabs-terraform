@@ -1,1 +1,1 @@
-grafana_admin_password            = "password"
+ui_admin_password            = "password"
