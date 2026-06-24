@@ -14,7 +14,7 @@ spec:
           - '$values/environments/portfolio/argocd/apps/otel-demo/values.yaml'
 
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: feature/observability-config-demo
+      targetRevision: feature/initial-vite-ui-app
       ref: values
 
   destination:
