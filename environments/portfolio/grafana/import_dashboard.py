@@ -34,7 +34,7 @@ def main():
         "kind": "Dashboard",
         "metadata": {
             "name": "demo-pub",
-            "namespace": f"{org_id}"
+            "namespace": f"org-{org_id}"
         },
         "spec": spec
     }
@@ -75,7 +75,7 @@ def main():
     # ----------------------------------------------------------------
     # Import dashboard
     # ----------------------------------------------------------------
-    dashboard_url = f"/apis/dashboard.grafana.app/v2/namespaces/{org_id}/dashboards"
+    dashboard_url = f"/apis/dashboard.grafana.app/v2/namespaces/org-{org_id}/dashboards"
     status, body = api_call("POST", dashboard_url, data=payload)
     print(f"POST dashboard: HTTP {status}")
 

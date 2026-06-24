@@ -815,7 +815,7 @@ resource "null_resource" "demo_dashboard_pub" {
   }
 
   provisioner "local-exec" {
-    command     = "python3 '${path.module}/import_dashboard.py' '${var.grafana_url}' 'org-${grafana_organization.public.org_id}' 'admin' '${var.ui_admin_password}' '${path.module}/dashboard.json'"
+    command     = "python3 '${path.module}/import_dashboard.py' '${var.grafana_url}' '${grafana_organization.public.org_id}' 'admin' '${var.ui_admin_password}' '${path.module}/dashboard.json'"
   }
 
   provisioner "local-exec" {
