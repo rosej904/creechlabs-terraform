@@ -39,14 +39,17 @@ def main():
         "spec": spec
     }
 
-    def api_call(method, path, data=None):
+    def api_call(method, path, data=None, org_id_header=None):
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Basic {credentials}",
+        }
+        if org_id_header:
+            headers["X-Grafana-Org-Id"] = org_id_header
         req = urllib.request.Request(
             f"{grafana_url}{path}",
             data=json.dumps(data).encode("utf-8") if data else None,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Basic {credentials}",
-            },
+            headers=headers,
             method=method
         )
         try:
@@ -56,15 +59,14 @@ def main():
             return e.code, e.read().decode()
 
     def set_permissions():
-        """Set explicit Viewer permission — required workaround for Grafana 13 OSS
-        anonymous auth /dto RBAC bug (github.com/grafana/grafana/issues/121010)"""
         perm_status, perm_body = api_call(
             "POST",
             "/api/dashboards/uid/demo-pub/permissions",
             data={"items": [
                 {"role": "Viewer", "permission": 1},
                 {"role": "Editor", "permission": 2}
-            ]}
+            ]},
+            org_id_header=org_id
         )
         print(f"Set dashboard permissions: HTTP {perm_status}")
         if perm_status not in (200, 204):
