@@ -59,11 +59,6 @@ def main():
             return e.code, e.read().decode()
 
     def set_permissions():
-        switch_status, switch_body = api_call("POST", f"/api/user/using/{org_id}")
-        print(f"Switch to org {org_id}: HTTP {switch_status}")
-        if switch_status != 200:
-            print(f"WARNING: Could not switch org context: {switch_body}")
-
         perm_status, perm_body = api_call(
             "POST",
             "/api/dashboards/uid/demo-pub/permissions",
