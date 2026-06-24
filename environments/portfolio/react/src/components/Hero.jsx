@@ -1,5 +1,3 @@
-// Drop your profile image into public/images/profile.jpg (or .png/.webp).
-// If the file doesn't exist the initials fallback shows automatically.
 const PROFILE_IMAGE = '/images/profile.jpg'
 const INITIALS = 'JC'
 
