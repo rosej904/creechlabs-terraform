@@ -77,6 +77,59 @@ components:
         memory: 250Mi
         cpu: 15m
 
+flagd:
+  enabled: true
+  config:
+    featureFlagsFile: |
+      {
+        "flags": {
+          "paymentServiceFailure": {
+            "state": "ENABLED",
+            "variants": {
+              "on": true,
+              "off": false
+            },
+            "defaultVariant": "off",
+            "targeting": {
+              "fractionalEvaluation": ["$flagd.flagKey", ["on", 40], ["off", 60]]
+            }
+          },
+          "cartServiceFailure": {
+            "state": "ENABLED",
+            "variants": {
+              "on": true,
+              "off": false
+            },
+            "defaultVariant": "off",
+            "targeting": {
+              "fractionalEvaluation": ["$flagd.flagKey", ["on", 10], ["off", 90]]
+            }
+          },
+          "productCatalogFailure": {
+            "state": "ENABLED",
+            "variants": {
+              "on": true,
+              "off": false
+            },
+            "defaultVariant": "off",
+            "targeting": {
+              "fractionalEvaluation": ["$flagd.flagKey", ["on", 15], ["off", 85]]
+            }
+          },
+          "recommendationServiceCacheFailure": {
+            "state": "ENABLED",
+            "variants": {
+              "on": true,
+              "off": false
+            },
+            "defaultVariant": "off",
+            "targeting": {
+              "fractionalEvaluation": ["$flagd.flagKey", ["on", 20], ["off", 80]]
+            }
+          }
+        }
+      }
+
   frontend-proxy:
     service:
       type: ClusterIP
