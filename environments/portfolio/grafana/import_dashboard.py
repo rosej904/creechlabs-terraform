@@ -25,6 +25,20 @@ def main():
     with open(dashboard_path, "r") as f:
         spec = json.load(f)
 
+    if "spec" in spec and "kind" in spec:
+        # Already wrapped - extract just the spec body
+        spec = spec["spec"]
+
+    payload = {
+        "apiVersion": "dashboard.grafana.app/v2",
+        "kind": "Dashboard",
+        "metadata": {
+            "name": "demo-pub",
+            "namespace": f"org-{org_id}"
+        },
+        "spec": spec
+    }
+
     def api_call(method, path, data=None):
         req = urllib.request.Request(
             f"{grafana_url}{path}",
@@ -42,7 +56,7 @@ def main():
             return e.code, e.read().decode()
 
     dashboard_url = f"/apis/dashboard.grafana.app/v2/namespaces/org-{org_id}/dashboards"
-    status, body = api_call("POST", dashboard_url, data=spec)
+    status, body = api_call("POST", dashboard_url, data=payload)
     print(f"POST dashboard: HTTP {status}")
 
     if status in (200, 201):
@@ -51,7 +65,7 @@ def main():
         sys.exit(0)
     elif status == 409:
         print("Dashboard already exists, updating via PUT...")
-        status2, body2 = api_call("PUT", f"{dashboard_url}/demo-pub", data=spec)
+        status2, body2 = api_call("PUT", f"{dashboard_url}/demo-pub", data=payload)
         print(f"PUT dashboard: HTTP {status2}")
         if status2 in (200, 201):
             print("Dashboard updated successfully")
