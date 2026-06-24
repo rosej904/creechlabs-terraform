@@ -78,6 +78,8 @@ components:
         cpu: 15m
 
   frontend-proxy:
+    config:
+      contentSecurityPolicy: "base-uri 'self'; frame-ancestors 'self' https://creechlabs.dev;"
     service:
       type: ClusterIP
     ingress:
@@ -91,8 +93,6 @@ components:
         alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
         alb.ingress.kubernetes.io/ssl-redirect: '443'
         alb.ingress.kubernetes.io/group.name: portfolio
-        nginx.ingress.kubernetes.io/configuration-snippet: |
-          more_set_headers "Content-Security-Policy: frame-ancestors 'self' https://creechlabs.dev";
       hosts:
         - host: otel-demo.creechlabs.dev
           paths:
