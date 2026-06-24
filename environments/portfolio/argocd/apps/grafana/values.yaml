@@ -33,7 +33,8 @@ grafana.ini:
   auth.anonymous:
     enabled: true
     org_name: Public
-    org_role: Viewer
+    org_role: Editor
+    viewers_can_edit: false
     hide_version: true
   auth:
     disable_login_form: false
