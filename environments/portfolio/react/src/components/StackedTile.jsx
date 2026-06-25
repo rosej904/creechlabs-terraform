@@ -10,7 +10,7 @@ export default function StackedTile({ onNotesClick, onRoadmapClick, onBioClick }
           <i className="ti ti-user text-lg text-[var(--color-accent)] shrink-0" aria-hidden="true" />
           <div className="flex-1 min-w-0">
             <p className="font-medium text-sm">About me</p>
-            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Background and certifications</p>
+            <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">AWS Certified Solutions Architect, CKA, OTel</p>
           </div>
           <i className="ti ti-chevron-right text-xs text-[var(--color-text-tertiary)]" aria-hidden="true" />
         </button>
@@ -22,8 +22,8 @@ export default function StackedTile({ onNotesClick, onRoadmapClick, onBioClick }
       >
         <i className="ti ti-notes text-lg text-[var(--color-accent)] shrink-0" aria-hidden="true" />
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm">Observability Blog</p>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Short write-ups</p>
+          <p className="font-medium text-sm">Lets Chat</p>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Ask Me About</p>
         </div>
         <i className="ti ti-chevron-right text-xs text-[var(--color-text-tertiary)]" aria-hidden="true" />
       </button>

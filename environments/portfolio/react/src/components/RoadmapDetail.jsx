@@ -1,6 +1,6 @@
 const ROADMAP_ITEMS = [
   {
-    title: 'More Opensource!',
+    title: 'More Open Source!',
     detail: 'Pyroscope - continous profiling, Grafana Alloy - Grafana Labs otel distribution, OpenCost - Real time cost observability',
   },
   {
@@ -17,7 +17,7 @@ const ROADMAP_ITEMS = [
   },
   {
     title: 'Enhance Portability of this Project',
-    detail: 'This project started as a personal testing environment and has evolved into a semi-production grade environment. The plan is to feature flag out some components to make the project more portable.'
+    detail: 'This project started as a personal testing environment and has evolved into a semi-production grade environment. The plan is to feature flag out some components and implement concepts from 12 factor methodology to make the project more portable.'
   }
 ]
 
