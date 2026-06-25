@@ -71,12 +71,12 @@ function PhotoCarousel() {
         {/* Desktop arrow buttons — hidden when only 1 photo */}
         {count > 1 && (
           <>
-            <button 
+            <button
               onClick={prev}
               aria-label="Previous photo"
               className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg bg-black/40 hover:bg-black/60 text-white transition-colors"
             >
-              <i className="ti ti-chevron-left text-sm text-white" aria-hidden="true"  />
+              <i className="ti ti-chevron-left text-sm text-white" aria-hidden="true" />
             </button>
             <button
               onClick={next}
@@ -98,8 +98,8 @@ function PhotoCarousel() {
               onClick={() => setCurrent(i)}
               aria-label={`Go to photo ${i + 1}`}
               className={`rounded-full transition-all duration-200 ${i === current
-                  ? 'w-4 h-1.5 bg-[var(--color-accent)]'
-                  : 'w-1.5 h-1.5 bg-[var(--color-text-tertiary)] hover:bg-[var(--color-text-secondary)]'
+                ? 'w-4 h-1.5 bg-[var(--color-accent)]'
+                : 'w-1.5 h-1.5 bg-[var(--color-text-tertiary)] hover:bg-[var(--color-text-secondary)]'
                 }`}
             />
           ))}
@@ -119,7 +119,7 @@ export default function BioDetail() {
           JC
         </div>
         <div>
-          <p className="font-medium text-base">Jordan Creech Rose</p>
+          <p className="font-medium text-base">Jordan Rose</p>
           <p className="text-sm text-[var(--color-text-secondary)]">Sr Infrastructure Engineer / Observability Specialist / SRE</p>
         </div>
       </div>
@@ -145,16 +145,16 @@ export default function BioDetail() {
         </p>
         <div className="flex flex-wrap gap-2">
           <a
-            href="https://github.com/rosej904/creechlabs-terraform" target="_blank" rel="noopener noreferrer"
-            className="text-xs bg-[var(--color-bg)] border border-[var(--color-border)] rounded-md px-2.5 py-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] inline-flex items-center gap-1"
-          >
-            <i className="ti ti-brand-github" aria-hidden="true" /> GitHub
-          </a>
-          <a
             href="https://www.linkedin.com/in/jordan-c-rose/" target="_blank" rel="noopener noreferrer"
             className="text-xs bg-[var(--color-bg)] border border-[var(--color-border)] rounded-md px-2.5 py-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] inline-flex items-center gap-1"
           >
             <i className="ti ti-brand-linkedin" aria-hidden="true" /> LinkedIn
+          </a>
+          <a
+            href="https://github.com/rosej904/creechlabs-terraform" target="_blank" rel="noopener noreferrer"
+            className="text-xs bg-[var(--color-bg)] border border-[var(--color-border)] rounded-md px-2.5 py-1 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] inline-flex items-center gap-1"
+          >
+            <i className="ti ti-brand-github" aria-hidden="true" /> GitHub
           </a>
           <a
             href="mailto:jordan_rose@creechlabs.dev"

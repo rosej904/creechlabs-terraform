@@ -8,13 +8,17 @@ const ROADMAP_ITEMS = [
     detail: 'On-site observability chatbot powered by Claude (potentially other LLMs) and a Grafana MCP server deployed in-cluster — ask natural language questions about live metrics, logs, traces, and alerts.',
   },
   {
-    title: 'Enhance Portability of this Project',
-    detail: 'This project started as a personal testing environment and has evolved into a semi-production grade environment. The plan is to feature flag out some components to make the project more portable.',
+    title: 'Chaos Engineering',
+    detail: 'Trigger an infrastructure failure and its automated remediations to test the resilience of the system and its components',
   },
   {
     title: 'IDP / SSO',
     detail: 'Keycloak deployed in-cluster as an open source OIDC identity provider, with ArgoCD and Grafana federated via OAuth2 for single sign-on and role-based access control.',
   },
+  {
+    title: 'Enhance Portability of this Project',
+    detail: 'This project started as a personal testing environment and has evolved into a semi-production grade environment. The plan is to feature flag out some components to make the project more portable.'
+  }
 ]
 
 export default function RoadmapDetail() {
