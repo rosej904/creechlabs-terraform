@@ -1,5 +1,7 @@
+// Drop your profile image into public/images/profile.jpg (or .png/.webp).
+// If the file doesn't exist the initials fallback shows automatically.
 const PROFILE_IMAGE = '/images/profile.jpg'
-const INITIALS = 'JC'
+const INITIALS = 'JR'
 
 function Avatar() {
   return (
@@ -29,21 +31,25 @@ function Avatar() {
 export default function Hero({ onBioClick }) {
   return (
     <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl mb-4 grid grid-cols-1 md:grid-cols-[1.4fr_1fr]">
-      <div className="p-8 flex flex-col justify-center">
-        <p className="text-sm text-[var(--color-text-tertiary)] mb-2">Hi, I'm</p>
-        <h1 className="text-3xl font-medium mb-3">Jordan Creech Rose</h1>
-        <p className="text-[var(--color-text-secondary)] leading-relaxed mb-6 max-w-lg">
+      <div className="p-5 md:p-8 flex flex-col justify-center">
+        <p className="text-xs md:text-sm text-[var(--color-text-tertiary)] mb-1 md:mb-2">Hi, I'm</p>
+        <h1 className="text-2xl md:text-3xl font-medium mb-2 md:mb-3">Jordan Rose</h1>
+        <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-4 md:mb-6 max-w-3xl hidden md:block">
           Welcome to my semi-production grade playground, evolved from a personal
           testing environment. This is an ephemeral, declarative, automated environment
           that is destroyed and rebuilt every day. Driven 100% by EaC/IaC, this platform
           orchestrates AWS EKS, an advanced observability stack, and GitOps workflows
           via ArgoCD.
         </p>
-        <div className="flex flex-wrap gap-2">
-          {['Terraform', 'Helm', 'ArgoCD', 'AWS EKS/CodeBuild/EventBridge', 'OTel', 'Grafana/Loki/Tempo/FluentBit'].map((tag) => (
+        {/* Shorter version for mobile */}
+        <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-4 md:hidden">
+          Ephemeral, declarative infrastructure — EKS, GitOps via ArgoCD, and a full observability stack. Rebuilt every day.
+        </p>
+        <div className="flex flex-wrap gap-1.5 md:gap-2">
+          {['Terraform', 'Helm', 'ArgoCD', 'AWS EKS', 'OTel', 'Grafana/Loki/Tempo'].map((tag) => (
             <span
               key={tag}
-              className="text-xs bg-[var(--color-bg)] border border-[var(--color-border)] rounded-md px-2.5 py-1 text-[var(--color-text-secondary)]"
+              className="text-xs bg-[var(--color-bg)] border border-[var(--color-border)] rounded-md px-2 py-0.5 md:px-2.5 md:py-1 text-[var(--color-text-secondary)]"
             >
               {tag}
             </span>
@@ -62,10 +68,20 @@ export default function Hero({ onBioClick }) {
           className="text-left p-8 flex flex-col justify-center hover:bg-[var(--color-surface-hover)] transition-colors w-full h-full md:rounded-r-2xl"
         >
           <Avatar />
-          <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+          <p className="text-sm text-[var(--color-text-secondary)] mb-4 leading-relaxed">
             I am your resident infrastructure and observability expert. I like
             diving deep into solutioning and architecture and have developed a
             real passion for observability.
+          </p>
+          <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+            {['AWS Certified Solutions Architect', 'CKA', 'OTel'].map((tag) => (
+              <span
+                key={tag}
+                className="text-xs bg-[var(--color-bg)] border border-[var(--color-border)] rounded-md px-2.5 py-1 text-[var(--color-text-secondary)]"
+              >
+                {tag}
+              </span>
+            ))}
           </p>
           <p className="text-xs text-[var(--color-text-tertiary)] mt-4 flex items-center gap-1">
             More about me <i className="ti ti-chevron-right" aria-hidden="true" />

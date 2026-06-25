@@ -6,21 +6,21 @@ export default function Footer() {
       </p>
       <div className="flex items-center gap-4">
         <a
-          href="#"
+          href="https://www.linkedin.com/in/jordan-c-rose/" target="_blank" rel="noopener noreferrer"
           className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
           aria-label="LinkedIn"
         >
           <i className="ti ti-brand-linkedin text-lg" aria-hidden="true" />
         </a>
         <a
-          href="#"
+          href="https://github.com/rosej904/creechlabs-terraform" target="_blank" rel="noopener noreferrer"
           className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
           aria-label="GitHub"
         >
           <i className="ti ti-brand-github text-lg" aria-hidden="true" />
         </a>
         <a
-          href="mailto:placeholder@creechlabs.dev"
+          href="mailto:jordan_rose@creechlabs.dev"
           className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
           aria-label="Email"
         >

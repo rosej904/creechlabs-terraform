@@ -11,11 +11,19 @@ export default function MobileLayout({ grafanaPanel, tileStack, headerHeight = 0
   return (
     <div
       className="flex flex-col"
-      style={{ height: `calc(100vh - ${headerHeight}px - 3rem)` }}
+      style={{
+        // dvh = dynamic viewport height, accounts for mobile browser chrome
+        // (address bar shrinking/expanding). Falls back to vh for older browsers.
+        height: `calc(100dvh - ${headerHeight}px - 3rem)`,
+      }}
     >
 
-      {/* Tab bar */}
-      <div className="flex bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-1 mb-3 shrink-0">
+      {/* Tab bar — stopPropagation prevents swipe handler stealing tap events */}
+      <div
+        className="flex bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-1 mb-3 shrink-0"
+        onTouchStart={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+      >
         {TABS.map((tab, i) => (
           <button
             key={tab.label}
