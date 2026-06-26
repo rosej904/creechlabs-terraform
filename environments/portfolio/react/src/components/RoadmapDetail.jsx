@@ -1,7 +1,7 @@
 const ROADMAP_ITEMS = [
   {
     title: 'More Open Source!',
-    detail: 'Pyroscope - continous profiling, Grafana Alloy - Grafana Labs otel distribution, OpenCost - Real time cost observability',
+    detail: 'Pyroscope - continous profiling, Grafana Alloy - Grafana Labs otel distribution, OpenCost - Real time cost observability, Mimir - Prometheues backend storage',
   },
   {
     title: 'LLM + MCP',
@@ -14,10 +14,6 @@ const ROADMAP_ITEMS = [
   {
     title: 'IDP / SSO',
     detail: 'Keycloak deployed in-cluster as an open source OIDC identity provider, with ArgoCD and Grafana federated via OAuth2 for single sign-on and role-based access control.',
-  },
-  {
-    title: 'Enhance Portability of this Project',
-    detail: 'This project started as a personal testing environment and has evolved into a semi-production grade environment. The plan is to feature flag out some components and implement concepts from 12 factor methodology to make the project more portable.'
   }
 ]
 

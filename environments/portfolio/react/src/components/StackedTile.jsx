@@ -22,8 +22,8 @@ export default function StackedTile({ onNotesClick, onRoadmapClick, onBioClick }
       >
         <i className="ti ti-notes text-lg text-[var(--color-accent)] shrink-0" aria-hidden="true" />
         <div className="flex-1 min-w-0">
-          <p className="font-medium text-sm">Lets Chat</p>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Ask Me About</p>
+          <p className="font-medium text-sm">Ask Me About</p>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">Observability & SRE, my career ...</p>
         </div>
         <i className="ti ti-chevron-right text-xs text-[var(--color-text-tertiary)]" aria-hidden="true" />
       </button>
@@ -35,7 +35,7 @@ export default function StackedTile({ onNotesClick, onRoadmapClick, onBioClick }
         <i className="ti ti-rocket text-lg text-[var(--color-accent)] shrink-0" aria-hidden="true" />
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm">Coming Soon</p>
-          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">What's next</p>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-0.5">What's next ...</p>
         </div>
         <i className="ti ti-chevron-right text-xs text-[var(--color-text-tertiary)]" aria-hidden="true" />
       </button>

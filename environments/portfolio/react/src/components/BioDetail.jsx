@@ -66,13 +66,12 @@ function PhotoCarousel() {
       >
         {/* Loading skeleton — visible until image loads */}
         {!loaded && (
-          <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="w-10 h-10 rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-accent)] animate-spin" />
           </div>
         )}
 
         <img
-          key={src}
           src={src}
           alt={`Photo ${current + 1} of ${count}`}
           className="w-full h-full object-contain transition-opacity duration-300"
@@ -124,7 +123,7 @@ function PhotoCarousel() {
         </div>
       )}
       <p className="text-sm text-[var(--color-text-tertiary)] leading-relaxed mb-4">
-        Beyond My Professional Career: I have an amazing family, of course including our domerman Anri, I love to travel, could eat hot wings every day, and absolutely love to ski (yes I live in Florida)!
+        Beyond My Professional Career: I have an amazing family, of course including our doberman Anri, I love to travel, could eat hot wings every day, and absolutely love to ski (yes I live in Florida)!
       </p>
     </div>
   )
@@ -149,7 +148,7 @@ export default function BioDetail() {
         15+ years in infrastructure engineering, enterprise IT, and a passion for automation and observability. Certified AWS Solutions Architect, Kuberenetes Admin, OTel and Observability Expert.
       </p>
       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-6">
-        Currently I drive and champion centralized end-to-end observability services and culture accross our enterprise and the multiple companies I suppport.
+        Currently I drive and champion centralized end-to-end observability services and culture accross our enterprise and the multiple companies I support.
         I work in hybrid on-prem & cloud environments, with every tech stack and vendor a large enterprise can dream up, and implement SRE practices into our DevOps lifecycle.
       </p>
       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-1">

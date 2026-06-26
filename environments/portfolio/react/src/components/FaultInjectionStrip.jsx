@@ -39,7 +39,7 @@ export default function FaultInjectionStrip({ status }) {
         </>
       ) : (
         <span className="text-xs text-[var(--color-text-tertiary)] shrink-0">
-          {status ? 'Stack is offline — weekdays 8:30am–5:00pm ET' : 'Checking status…'}
+          {status ? 'Stack will be back online weekdays 8:30am–5:00pm ET' : 'Checking status…'}
         </span>
       )}
     </div>

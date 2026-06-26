@@ -13,7 +13,7 @@ export default function GrafanaPanel({ status }) {
       <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] shrink-0 rounded-t-2xl overflow-visible relative z-10">
         <i className="ti ti-chart-dots-3 text-sm text-[var(--color-accent)]" aria-hidden="true" />
         <p className="text-xs text-[var(--color-text-secondary)]">
-          Live observability demo &mdash; otel-demo app &middot; SLO burn-rate alerting &middot; Prometheus &middot; Loki &middot; Tempo
+          Live observability demo: Online 9am-5pm ET &mdash; otel-demo app &middot; SLO burn-rate alerting &middot; Grafana &middot; Prometheus &middot; Loki &middot; Tempo
         </p>
         <div className="ml-auto flex items-center gap-1.5 shrink-0">
           <StatusDot status={grafanaStatus} tooltip={false} />

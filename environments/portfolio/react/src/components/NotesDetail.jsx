@@ -2,7 +2,7 @@ const PLACEHOLDER_POSTS = [
   {
     title: 'Centralized Observability vs Culture',
     excerpt:
-      'Todays IT consist of modern tech moving at lightning speed, AI Agents, legacy systems, and hybrid environments all intertwined with hundreds or thousands of micro-services. Some of the major challenges Ive had to solve include managing high cardinality data, tons of sources with non-standard data sets, the covetedsingle-pane-of-glass, ensuring signals have context, and of course - effective user enablement, ',
+      'Todays IT consist of modern tech moving at lightning speed, AI Agents, legacy systems, and hybrid environments all intertwined with hundreds or thousands of micro-services. Some of the major challenges Ive had to solve include managing high cardinality data, tons of sources with non-standard data sets, the covetedsingle-pane-of-glass, ensuring signals have context, and of course - effective user enablement. ',
   },
   {
     title: 'Enabling the Dev: SRE & Observability-as-a-Service',
@@ -36,13 +36,13 @@ export default function NotesDetail() {
             </p>
           </div>
         ))}
-        
+
         <a
           href="mailto:jordan_rose@creechlabs.dev"
           className="text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] transition-colors"
           aria-label="Email"
         >
-          
+
           <i className="ti ti-mail text-lg mr-2" aria-hidden="true" />
           Reach me on email: Jordan_Rose@creechlabs.dev
         </a>

@@ -37,16 +37,14 @@ export default function Hero({ onBioClick }) {
         <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-4 md:mb-6 max-w-3xl hidden md:block">
           Welcome to my semi-production grade playground, evolved from a personal
           testing environment. This is an ephemeral, declarative, automated environment
-          that is destroyed and rebuilt every day. Driven 100% by EaC/IaC, this platform
-          orchestrates AWS EKS, an advanced observability stack, and GitOps workflows
-          via ArgoCD.
+          that is destroyed and rebuilt every day driven 100% by EaC/IaC. 
         </p>
         {/* Shorter version for mobile */}
         <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-4 md:hidden">
           Ephemeral, declarative infrastructure — EKS, GitOps via ArgoCD, and a full observability stack. Rebuilt every day.
         </p>
         <div className="flex flex-wrap gap-1.5 md:gap-2">
-          {['Terraform', 'Helm', 'ArgoCD', 'AWS EKS', 'OTel', 'Grafana/Loki/Tempo'].map((tag) => (
+          {['Terraform', 'Helm', 'ArgoCD', 'AWS EKS', 'OTel', 'Grafana/Loki/Tempo/Prometheus'].map((tag) => (
             <span
               key={tag}
               className="text-xs bg-[var(--color-bg)] border border-[var(--color-border)] rounded-md px-2 py-0.5 md:px-2.5 md:py-1 text-[var(--color-text-secondary)]"
