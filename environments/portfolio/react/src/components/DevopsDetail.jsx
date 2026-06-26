@@ -11,7 +11,7 @@ export default function DevopsDetail() {
         are included in the daily teardown.
       </p>
       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-6">
-        EKS Infra/App layer stands up the external DNS and AWS LBC commponents to 
+        EKS Infra/App layer stands up the external DNS and AWS LBC components to 
         automatically detect ingress resources that are created/updated during ArgoCD state sync to provision ALB, 
         corresponding CNAME records in Cloudflare, and sync ACM certs.
       </p>

@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react'
-import { useMobileSwipe } from '../hooks/useMobileSwipe'
 
 // ─────────────────────────────────────────────────────────
 // Add filenames here when you drop photos into
@@ -25,50 +24,68 @@ const BASE_PATH = '/images/bio/'
 
 function PhotoCarousel() {
   const [current, setCurrent] = useState(0)
+  const [loaded, setLoaded] = useState(false)
   const [failedSrcs, setFailedSrcs] = useState(new Set())
 
   const visible = PHOTOS.filter((f) => !failedSrcs.has(f))
   const count = visible.length
 
-  const prev = useCallback(() => setCurrent((i) => (i - 1 + count) % count), [count])
-  const next = useCallback(() => setCurrent((i) => (i + 1) % count), [count])
+  const prev = useCallback(() => {
+    setLoaded(false)
+    setCurrent((i) => (i - 1 + count) % count)
+  }, [count])
 
-  // Reuse the existing swipe hook — same direction logic as mobile panels
-  const { onTouchStart, onTouchEnd } = useMobileSwipe(count)
+  const next = useCallback(() => {
+    setLoaded(false)
+    setCurrent((i) => (i + 1) % count)
+  }, [count])
 
-  // Override swipe hook's internal state with our own nav
-  const handleTouchStart = (e) => onTouchStart(e)
-  const handleTouchEnd = (e) => {
-    const touch = e.changedTouches[0]
-    const startX = e.currentTarget._touchStartX
-    if (startX === undefined) return
-    const dx = touch.clientX - startX
-    if (Math.abs(dx) > 50) dx < 0 ? next() : prev()
-  }
   const captureStart = (e) => {
     e.currentTarget._touchStartX = e.touches[0].clientX
+  }
+  const handleTouchEnd = (e) => {
+    const startX = e.currentTarget._touchStartX
+    if (startX === undefined) return
+    const dx = e.changedTouches[0].clientX - startX
+    if (Math.abs(dx) > 50) dx < 0 ? next() : prev()
   }
 
   if (count === 0) return null
 
   const src = BASE_PATH + visible[current]
+  const nextSrc = count > 1 ? BASE_PATH + visible[(current + 1) % count] : null
 
   return (
     <div className="mb-6">
+      {/* Fixed height container — never collapses between image loads */}
       <div
         className="relative bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl overflow-hidden"
+        style={{ height: '340px' }}
         onTouchStart={captureStart}
         onTouchEnd={handleTouchEnd}
       >
+        {/* Loading skeleton — visible until image loads */}
+        {!loaded && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-10 h-10 rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-accent)] animate-spin" />
+          </div>
+        )}
+
         <img
-          key={src}
           src={src}
           alt={`Photo ${current + 1} of ${count}`}
-          className="w-full max-h-[50vh] object-contain"
-          onError={() => setFailedSrcs((s) => new Set([...s, visible[current]]))}
+          className="w-full h-full object-contain transition-opacity duration-300"
+          style={{ opacity: loaded ? 1 : 0 }}
+          onLoad={() => setLoaded(true)}
+          onError={() => {
+            setFailedSrcs((s) => new Set([...s, visible[current]]))
+            setLoaded(true)
+          }}
         />
 
-        {/* Desktop arrow buttons — hidden when only 1 photo */}
+        {/* Preload next image silently so it's cached before user navigates */}
+        {nextSrc && <img src={nextSrc} className="hidden" alt="" aria-hidden="true" />}
+
         {count > 1 && (
           <>
             <button
@@ -76,14 +93,14 @@ function PhotoCarousel() {
               aria-label="Previous photo"
               className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg bg-black/40 hover:bg-black/60 text-white transition-colors"
             >
-              <i className="ti ti-chevron-left text-sm text-white" aria-hidden="true" />
+              <i className="ti ti-chevron-left text-sm" aria-hidden="true" />
             </button>
             <button
               onClick={next}
               aria-label="Next photo"
               className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-lg bg-black/40 hover:bg-black/60 text-white transition-colors"
             >
-              <i className="ti ti-chevron-right text-sm text-white" aria-hidden="true" />
+              <i className="ti ti-chevron-right text-sm" aria-hidden="true" />
             </button>
           </>
         )}
@@ -105,6 +122,9 @@ function PhotoCarousel() {
           ))}
         </div>
       )}
+      <p className="text-sm text-[var(--color-text-tertiary)] leading-relaxed mb-4">
+        Beyond My Professional Career: I have an amazing family, of course including our doberman Anri, I love to travel, could eat hot wings every day, and absolutely love to ski (yes I live in Florida)!
+      </p>
     </div>
   )
 }
@@ -123,14 +143,12 @@ export default function BioDetail() {
           <p className="text-sm text-[var(--color-text-secondary)]">Sr Infrastructure Engineer / Observability Specialist / SRE</p>
         </div>
       </div>
-      <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-4">
-        Beyond My Professional Career: I have an amazing family, including our Domerman Anri, I love to travel, could eat hot wings every day, and absolutely love to Ski (Yes I live in Florida)!
-      </p>
+
       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-4">
         15+ years in infrastructure engineering, enterprise IT, and a passion for automation and observability. Certified AWS Solutions Architect, Kuberenetes Admin, OTel and Observability Expert.
       </p>
       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-6">
-        Currently I drive and champion centralized end-to-end observability services and culture accross our enterprise and the multiple companies I suppport.
+        Currently I drive and champion centralized end-to-end observability services and culture accross our enterprise and the multiple companies I support.
         I work in hybrid on-prem & cloud environments, with every tech stack and vendor a large enterprise can dream up, and implement SRE practices into our DevOps lifecycle.
       </p>
       <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-1">

@@ -1,31 +1,41 @@
+import StatusDot from './StatusDot'
+
 const GRAFANA_URL =
-  'https://grafana.creechlabs.dev/d/demo-pub/demo?orgId=6&kiosk&theme=dark'
+  'https://grafana.creechlabs.dev/d/demo-pub/demo?orgId=2&kiosk&theme=dark'
 
 export default function GrafanaPanel({ status }) {
-  const isUp = status?.apps?.detail?.grafana?.status === 'up'
+  const grafanaStatus = status?.apps?.detail?.grafana?.status ?? (status ? 'down' : undefined)
+  const isUp = grafanaStatus === 'up'
 
   return (
-    <div className="h-full flex flex-col bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl overflow-hidden">
+    <div className="h-full flex flex-col bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl">
       {/* Context bar */}
-      <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] shrink-0">
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] shrink-0 rounded-t-2xl overflow-visible relative z-10">
         <i className="ti ti-chart-dots-3 text-sm text-[var(--color-accent)]" aria-hidden="true" />
         <p className="text-xs text-[var(--color-text-secondary)]">
-          Live observability demo &mdash; otel-demo app &middot; SLO burn-rate alerting &middot; Prometheus &middot; Loki &middot; Tempo
+          Live observability demo: Online 9am-5pm ET &mdash; otel-demo app &middot; SLO burn-rate alerting &middot; Grafana &middot; Prometheus &middot; Loki &middot; Tempo
         </p>
-        <span className={`ml-auto shrink-0 w-1.5 h-1.5 rounded-full ${isUp ? 'bg-[var(--color-status-up)]' : 'bg-[var(--color-status-stopped)]'}`} />
+        <div className="ml-auto flex items-center gap-1.5 shrink-0">
+          <StatusDot status={grafanaStatus} tooltip={false} />
+          <span className="text-xs text-[var(--color-text-tertiary)]">
+            {grafanaStatus === 'up' ? 'Status: Up' : grafanaStatus === 'down' ? 'Status: Degraded' : grafanaStatus === 'stopped' ? 'Status: Scheduled offline' : ''}
+          </span>
+        </div>
       </div>
 
       {isUp ? (
-        <iframe
-          title="Grafana live dashboard"
-          src={GRAFANA_URL}
-          className="w-full flex-1 min-h-0 bg-[var(--color-bg)]"
-          style={{ minWidth: '1200px' }}
-          loading="lazy"
-          allow="fullscreen"
-        />
+        <div className="flex-1 min-h-0 overflow-hidden rounded-b-2xl">
+          <iframe
+            title="Grafana live dashboard"
+            src={GRAFANA_URL}
+            className="w-full h-full bg-[var(--color-bg)]"
+            style={{ minWidth: '1200px' }}
+            loading="lazy"
+            allow="fullscreen"
+          />
+        </div>
       ) : (
-        <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-8">
+        <div className="w-full flex-1 flex flex-col items-center justify-center gap-3 p-8 rounded-b-2xl">
           <i className="ti ti-moon text-3xl text-[var(--color-text-tertiary)]" aria-hidden="true" />
           <p className="text-sm text-[var(--color-text-secondary)] text-center max-w-xs">
             Grafana is offline — the EKS cluster runs weekdays

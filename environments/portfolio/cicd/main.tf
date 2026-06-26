@@ -180,9 +180,16 @@ resource "aws_codebuild_project" "terraform_destroy" {
       value = var.project_name
     }
 
+
     environment_variable {
       name  = "CLOUDFLARE_API_TOKEN"
       value = aws_secretsmanager_secret.cloudflare_api_token.name
+      type  = "SECRETS_MANAGER"
+    }
+
+    environment_variable {
+      name  = "UI_ADMIN_PASSWORD"
+      value = aws_secretsmanager_secret.ui_admin_password.name
       type  = "SECRETS_MANAGER"
     }
   }

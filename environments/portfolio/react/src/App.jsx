@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Hero from './components/Hero'
 import StatusStrip from './components/StatusStrip'
 import FaultInjectionStrip from './components/FaultInjectionStrip'
+import ProjectContextStrip from './components/ProjectContextStrip'
 import GrafanaPanel from './components/GrafanaPanel'
 import TileStack from './components/TileStack'
 import Modal from './components/Modal'
@@ -62,7 +63,8 @@ function App() {
         <div>
           <Hero onBioClick={() => setExpandedTile('bio')} />
           <StatusStrip status={status} />
-          <FaultInjectionStrip status={status} />
+          <ProjectContextStrip />
+          {!isMobile && <FaultInjectionStrip status={status} />}
         </div>
 
         {isMobile ? (
@@ -105,9 +107,9 @@ function App() {
           /* ── Desktop: sticky left + scrollable right ── */
           <div
             className="flex gap-4"
-            style={{ height: 'calc(100dvh - 18rem)' }}
+            style={{ height: 'calc(100dvh - 18rem)',  minHeight: '800px'  }}
           >
-            <div className="flex-1 min-w-0 flex flex-col overflow-hidden">
+            <div className="flex-1 min-w-0 flex flex-col overflow-hidden" style={{ minHeight: '800px' }}>
               <div className="flex-1 min-h-0">
                 <GrafanaPanel status={status} />
               </div>

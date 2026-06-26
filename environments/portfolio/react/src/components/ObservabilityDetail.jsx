@@ -19,9 +19,9 @@ export default function ObservabilityDetail({ status }) {
         Prometheus, Loki, and Tempo feed Grafana with
         cross-datasource correlation — click a trace to jump straight to it's
         logs, or from a log line back to the trace that produced it. The
-        otel-demo app generates and ships live telemetry via OTLP to the otel-collector which export to the respecitive backends. 
+        otel-demo app generates and ships live telemetry via OTLP to the otel-collector which export to the respective backends. 
         Fluentbit scrapes container logs and ships direct to Loki. Observability|SRE|Monitoring-as-Service is implemented via an opt-in model. The services - checkout,
-        recommendation, frontend, and productcatalog have enabled SRE monitoring via adding a label to the deployment. This enables 
+        recommendation, frontend, and product catalog have enabled SRE monitoring via adding a label to the deployment. This enables 
         SLO burn-rate and error budgets. 
       </p>
 
