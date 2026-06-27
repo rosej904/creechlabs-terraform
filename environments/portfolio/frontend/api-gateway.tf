@@ -8,7 +8,7 @@ resource "aws_apigatewayv2_api" "status_api" {
 
   cors_configuration {
     allow_origins = ["https://${var.domain_name}", "https://${var.www_domain_name}"]
-    allow_methods = ["GET"]
+    allow_methods = ["GET", "POST", "OPTIONS"]
     allow_headers = ["content-type"]
     max_age       = 300
   }
