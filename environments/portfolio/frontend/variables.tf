@@ -84,3 +84,27 @@ variable "lambda_log_retention_days" {
   type        = number
   default     = 14
 }
+
+variable "anthropic_api_key" {
+  description = "Anthropic API key for the portfolio AI chatbot. Set in terraform.tfvars (gitignored) — never commit this value."
+  type        = string
+  sensitive   = true
+}
+
+variable "claude_model" {
+  description = "Anthropic model ID for the chatbot. Haiku for cost efficiency; swap to claude-sonnet-4-6 when MCP tool calls land in branch 2."
+  type        = string
+  default     = "claude-haiku-4-5"
+}
+
+variable "chat_daily_token_cap" {
+  description = "Hard daily token budget across all users combined. 500k ≈ $0.50/day at Haiku rates. Raise after observing real traffic patterns."
+  type        = number
+  default     = 500000
+}
+
+variable "chat_max_messages" {
+  description = "Max conversation turns sent to the API per request. Prevents token bleed on long sessions — older turns are dropped beyond this."
+  type        = number
+  default     = 20
+}
