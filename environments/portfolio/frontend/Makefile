@@ -9,7 +9,7 @@
 FUNCTION_NAME := cl-portfolio-chat
 LAMBDA_SRC    := lambda/chatbot_handler
 PACKAGE_DIR   := $(LAMBDA_SRC)/package
-ZIP_FILE      := chat_lambda.zip
+ZIP_FILE      := lambda/chat_lambda.zip
 REGION        := us-east-1
 
 .PHONY: build clean deploy test logs

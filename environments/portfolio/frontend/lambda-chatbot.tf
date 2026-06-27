@@ -97,7 +97,7 @@ resource "aws_iam_role_policy" "chat_lambda_policy" {
 data "archive_file" "chat_lambda_zip" {
   type        = "zip"
   source_dir  = local.chat_lambda_src
-  output_path = "${path.module}/chat_lambda.zip"
+  output_path = "${path.module}/lambda/chat_lambda.zip"
   excludes    = ["__pycache__", "*.pyc", ".pytest_cache"]
 }
 
