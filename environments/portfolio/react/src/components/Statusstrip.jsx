@@ -13,7 +13,9 @@ function resolveStatus(status, key) {
   return status.apps?.detail?.[key]?.status
 }
 
-export default function StatusStrip({ status }) {
+export default function StatusStrip({ status, onTopologyClick }) {
+  const eksUp = resolveStatus(status, 'eks') === 'up'
+
   return (
     <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl px-4 md:px-8 py-3 md:py-4 mb-4 flex flex-wrap items-center gap-x-6 gap-y-2">
       {STATUS_ITEMS.map((item) => (
@@ -22,6 +24,16 @@ export default function StatusStrip({ status }) {
           <span className="text-xs text-[var(--color-text-secondary)]">{item.label}</span>
         </div>
       ))}
+
+      {eksUp && onTopologyClick && (
+        <button
+          onClick={onTopologyClick}
+          className="ml-auto hidden md:flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors"
+        >
+          <i className="ti ti-table text-sm text-[var(--color-accent)]" aria-hidden="true" />
+          View live resources
+        </button>
+      )}
     </div>
   )
 }

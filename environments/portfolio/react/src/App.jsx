@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import Hero from './components/Hero'
 import StatusStrip from './components/StatusStrip'
 import FaultInjectionStrip from './components/FaultInjectionStrip'
 import ProjectContextStrip from './components/ProjectContextStrip'
 import GrafanaPanel from './components/GrafanaPanel'
+const AwsResourceTable = lazy(() => import('./components/AwsResourceTable'))
 import TileStack from './components/TileStack'
 import Modal from './components/Modal'
 import Footer from './components/Footer'
@@ -33,6 +34,7 @@ function useIsMobile() {
 
 function App() {
   const [expandedTile, setExpandedTile] = useState(null)
+  const [showTopology, setShowTopology] = useState(false)
   const [mobileTab, setMobileTab] = useState(1)
   const { status, error, loading } = useInfraStatus()
   const isMobile = useIsMobile()
@@ -62,7 +64,7 @@ function App() {
         {/* Full-width header */}
         <div>
           <Hero onBioClick={() => setExpandedTile('bio')} />
-          <StatusStrip status={status} />
+          <StatusStrip status={status} onTopologyClick={() => setShowTopology(true)} />
           <ProjectContextStrip />
           {!isMobile && <FaultInjectionStrip status={status} />}
         </div>
@@ -123,6 +125,14 @@ function App() {
         )}
 
       </div>
+
+      {showTopology && (
+        <Modal title="Live AWS resources" onClose={() => setShowTopology(false)}>
+          <Suspense fallback={<div className="flex items-center justify-center h-32 text-[var(--color-text-tertiary)]"><i className="ti ti-loader animate-spin text-2xl" /></div>}>
+            <AwsResourceTable />
+          </Suspense>
+        </Modal>
+      )}
 
       {expandedTile && modalContent[expandedTile] && (
         <Modal

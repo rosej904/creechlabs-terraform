@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────
- S3 Buckets + CF Dist for redirects
+# S3 Buckets + CF Dist for redirects
 # ─────────────────────────────────────────────────────────
 
 resource "aws_s3_bucket" "www_redirect" {

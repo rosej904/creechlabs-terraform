@@ -37,11 +37,40 @@ resource "aws_iam_role_policy" "status_checker_eks_read" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["eks:DescribeCluster"]
-      Resource = "arn:aws:eks:${var.aws_region}:${var.aws_account_id}:cluster/${var.eks_cluster_name}"
-    }]
+    Statement = [
+      {
+        # EKS — DescribeCluster needed for /api/status, ListNodegroups for resource count
+        Effect = "Allow"
+        Action = [
+          "eks:DescribeCluster",
+          "eks:ListNodegroups",
+        ]
+        Resource = "arn:aws:eks:${var.aws_region}:${var.aws_account_id}:cluster/${var.eks_cluster_name}"
+      },
+      {
+        # EC2, ELB, and other services — all describe-only, resource-level not supported
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeVpcs",
+          "ec2:DescribeSubnets",
+          "ec2:DescribeInstances",
+          "ec2:DescribeNatGateways",
+          "ec2:DescribeInternetGateways",
+          "elasticloadbalancing:DescribeLoadBalancers",
+          "elasticloadbalancing:DescribeTargetGroups",
+          "autoscaling:DescribeAutoScalingGroups",
+          "lambda:ListFunctions",
+          "apigatewayv2:GetApis",
+          "cloudfront:ListDistributions",
+          "codebuild:ListProjects",
+          "events:ListRules",
+          "s3:ListAllMyBuckets",
+          "ce:GetCostAndUsage",
+          "apigateway:GetRestApis",
+        ]
+        Resource = "*"
+      }
+    ]
   })
 }
 
@@ -56,7 +85,7 @@ resource "aws_lambda_function" "status_checker" {
   handler = "index.handler"
   runtime = "python3.12"
   timeout = 10
-  memory_size = 128
+  memory_size = 256
 
   environment {
     variables = {
