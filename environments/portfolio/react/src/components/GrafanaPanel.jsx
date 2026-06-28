@@ -10,7 +10,7 @@ export default function GrafanaPanel({ status }) {
   return (
     <div className="h-full flex flex-col bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl">
       {/* Context bar */}
-      <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] shrink-0 rounded-t-2xl overflow-visible relative z-10">
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-[var(--color-border)] shrink-0 rounded-t-2xl overflow-visible">
         <i className="ti ti-chart-dots-3 text-sm text-[var(--color-accent)]" aria-hidden="true" />
         <p className="text-xs text-[var(--color-text-secondary)]">
           Live observability demo: Online 9am-5pm ET &mdash; otel-demo app &middot; SLO burn-rate alerting &middot; Grafana &middot; Prometheus &middot; Loki &middot; Tempo
@@ -39,7 +39,7 @@ export default function GrafanaPanel({ status }) {
           <i className="ti ti-moon text-3xl text-[var(--color-text-tertiary)]" aria-hidden="true" />
           <p className="text-sm text-[var(--color-text-secondary)] text-center max-w-xs">
             Grafana is offline — the EKS cluster runs weekdays
-            8:30am–5:00pm ET. Check back during business hours.
+            9am–5pm ET. Check back during business hours.
           </p>
           <div className="mt-2 space-y-1 text-xs text-[var(--color-text-tertiary)] text-center">
             <p>SLO burn-rate alerting · Multi-window multi-burn-rate</p>

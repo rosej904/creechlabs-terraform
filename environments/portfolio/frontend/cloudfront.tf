@@ -54,7 +54,7 @@ resource "aws_cloudfront_distribution" "frontend" {
   # /api/* routed to API Gateway, never cached.
   ordered_cache_behavior {
     path_pattern             = "/api/*"
-    allowed_methods          = ["GET", "HEAD", "OPTIONS"]
+    allowed_methods          = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
     cached_methods            = ["GET", "HEAD"]
     target_origin_id          = "apigw-status"
     viewer_protocol_policy    = "redirect-to-https"

@@ -10,7 +10,7 @@ export default function CicdDetail() {
         fully destroyed every evening and rebuilt every weekday morning,
         scheduled with EventBridge and run through CodeBuild. This isn't a
         scale-down; the cluster and its workloads are fully ephemeral and cease to exist entirely
-        between 5pm and 8:30am ET.
+        between 5pm and 9am ET.
       </p>
       <div className="border-t border-[var(--color-border)] pt-5">
         <p className="text-xs font-medium text-[var(--color-text-tertiary)] mb-3 uppercase tracking-wide">

@@ -25,7 +25,7 @@ export default function StatusStrip({ status, onTopologyClick }) {
         </div>
       ))}
 
-      {eksUp && onTopologyClick && (
+      {/* {eksUp && onTopologyClick && ( */}
         <button
           onClick={onTopologyClick}
           className="ml-auto hidden md:flex items-center gap-1.5 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] transition-colors"
@@ -33,7 +33,7 @@ export default function StatusStrip({ status, onTopologyClick }) {
           <i className="ti ti-table text-sm text-[var(--color-accent)]" aria-hidden="true" />
           View live resources
         </button>
-      )}
+      {/* )} */}
     </div>
   )
 }

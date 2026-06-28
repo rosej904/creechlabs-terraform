@@ -32,7 +32,7 @@ export default function ObservabilityDetail({ status }) {
         <ul className="space-y-1">
           {[
             'SLO burn windows are compressed for demo purposes (5m/1h fast burn, 30m/3h slow burn) — production pattern uses 28–30 day windows',
-            'Stack is ephemeral — destroyed nightly at 5pm ET, rebuilt 8:30am ET weekdays; dashboard shows "No data" outside those hours',
+            'Stack is ephemeral — destroyed nightly at 5pm ET, rebuilt 9am ET weekdays; dashboard shows "No data" outside those hours',
             'Log–trace correlation only available for OTLP-instrumented services; other services log without trace context',
           ].map((note) => (
             <li key={note} className="flex gap-2 text-xs text-[var(--color-text-secondary)] leading-relaxed">
