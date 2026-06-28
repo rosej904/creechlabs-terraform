@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef, lazy, Suspense  } from 'react'
+import { useState, useEffect, useRef, lazy, Suspense } from 'react'
 const ReactMarkdown = lazy(() => import('react-markdown'))
 import GrafanaChatPanel from './GrafanaChatPanel'
 
-const API_URL = '/api/chat'
-const ANRI_IMAGE = '/images/anri.png'
+const API_URL     = '/api/chat'
+const ANRI_IMAGE  = '/images/anri.png'
 
 const TILT_STYLE = `
   @keyframes headtilt {
@@ -17,18 +17,10 @@ const TILT_STYLE = `
   }
 `
 
-// const SUGGESTIONS = [
-//   'What is the current error rate for the checkout service?',
-//   'Are there any active SLO burn alerts right now?',
-//   'Show me p99 latency for the frontend service',
-// ]
-
 const SUGGESTIONS = [
-  'Tell me about this portfolio?',
-  'Why is your name Anri?',
-  'What infrastructure is this built on?',
-  'Are there any active SLO burn alerts right now? (Coming Soon!)',
-  'What is the current error rate for the checkout service? (Coming Soon!)',
+  'What is the current error rate for the checkout service?',
+  'Are there any active SLO burn alerts right now?',
+  'Show me p99 latency for the frontend service',
 ]
 
 // ─── Inline head for assistant replies ───────────────────────────────────────
@@ -60,10 +52,11 @@ function Message({ role, content }) {
   return (
     <div className={`flex gap-2 items-end ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
       {!isUser && <AnriHead size={34} />}
-      <div className={`max-w-[82%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${isUser
+      <div className={`max-w-[82%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${
+        isUser
           ? 'bg-[var(--color-accent)] text-[#0b0d10] rounded-tr-sm'
           : 'bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-primary)] rounded-tl-sm'
-        }`}>
+      }`}>
         {isUser ? content : (
           <Suspense fallback={<span>{content}</span>}>
             <ReactMarkdown
@@ -76,10 +69,10 @@ function Message({ role, content }) {
               code:   ({children}) => <code className="bg-[var(--color-bg)] rounded px-1 py-0.5 text-xs font-mono text-[var(--color-accent)]">{children}</code>,
               a:      ({href, children}) => <a href={href} target="_blank" rel="noopener noreferrer" className="text-[var(--color-accent)] underline underline-offset-2">{children}</a>,
               h3:     ({children}) => <p className="font-semibold text-[var(--color-text-primary)] mt-1 mb-0.5">{children}</p>,
-              }}
-            >
-              {content}
-            </ReactMarkdown>
+            }}
+          >
+            {content}
+          </ReactMarkdown>
           </Suspense>
         )}
       </div>
@@ -141,10 +134,10 @@ export default function AnriWidget({ grafanaStatus, bubbleStyle }) {
     setInput('')
     setLoading(true)
     try {
-      const res = await fetch(API_URL, {
-        method: 'POST',
+      const res  = await fetch(API_URL, {
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: newMessages }),
+        body:    JSON.stringify({ messages: newMessages }),
       })
       const data = await res.json()
       if (res.status === 429 || data.quota_exhausted) {
@@ -182,13 +175,13 @@ export default function AnriWidget({ grafanaStatus, bubbleStyle }) {
           <div
             className="fixed bottom-6 right-6 border border-[var(--color-border)] rounded-2xl flex overflow-hidden transition-all duration-[250ms] ease-out"
             style={{
-              zIndex: 9999,
-              width: 'min(860px, calc(100vw - 3rem))',
-              height: 'min(760px, calc(100dvh - 5rem))',
+              zIndex:          9999,
+              width:           'min(860px, calc(100vw - 3rem))',
+              height:          'min(760px, calc(100dvh - 5rem))',
               transformOrigin: 'bottom right',
-              transform: visible ? 'scale(1)' : 'scale(0.15)',
-              opacity: visible ? 1 : 0,
-              boxShadow: '0 0 0 1px rgba(79,209,197,0.12), 0 8px 40px rgba(0,0,0,0.6), 0 2px 12px rgba(79,209,197,0.06)',
+              transform:       visible ? 'scale(1)' : 'scale(0.15)',
+              opacity:         visible ? 1 : 0,
+              boxShadow:       '0 0 0 1px rgba(79,209,197,0.12), 0 8px 40px rgba(0,0,0,0.6), 0 2px 12px rgba(79,209,197,0.06)',
               backgroundColor: '#0d1117',
             }}
             onClick={(e) => e.stopPropagation()}
@@ -201,7 +194,7 @@ export default function AnriWidget({ grafanaStatus, bubbleStyle }) {
             {/* Right — Chat */}
             <div className="flex flex-col w-full md:w-[320px] shrink-0">
               {/* Header — text only, no avatar */}
-              <div className="flex items-center gap-2.5 px-4 py-3 border-[var(--color-border)] shrink-0">
+              <div className="flex items-center gap-2.5 px-4 py-3 border-b border-[var(--color-border)] shrink-0">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium leading-none">Ask Anri</p>
                   <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">
@@ -240,9 +233,9 @@ export default function AnriWidget({ grafanaStatus, bubbleStyle }) {
                   <div className="flex gap-2 items-end">
                     <AnriHead size={34} />
                     <div className="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl rounded-tl-sm px-3 py-2 flex gap-1 items-center">
-                      {[0, 1, 2].map((i) => (
+                      {[0,1,2].map((i) => (
                         <span key={i} className="w-1.5 h-1.5 rounded-full bg-[var(--color-accent)] animate-bounce"
-                          style={{ animationDelay: `${i * 150}ms` }} />
+                          style={{ animationDelay: `${i*150}ms` }} />
                       ))}
                     </div>
                   </div>
@@ -284,10 +277,10 @@ export default function AnriWidget({ grafanaStatus, bubbleStyle }) {
               className={tilting ? 'anri-tilt' : ''}
               style={{
                 background: 'none',
-                border: 'none',
-                padding: 0,
-                cursor: 'pointer',
-                filter: 'drop-shadow(0 0 8px rgba(79,209,197,0.55)) drop-shadow(0 0 2px rgba(79,209,197,0.9))',
+                border:     'none',
+                padding:    0,
+                cursor:     'pointer',
+                filter:     'drop-shadow(0 0 8px rgba(79,209,197,0.55)) drop-shadow(0 0 2px rgba(79,209,197,0.9))',
                 transition: 'filter 0.2s ease',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.filter = 'drop-shadow(0 0 12px rgba(79,209,197,0.8)) drop-shadow(0 0 4px rgba(79,209,197,1))' }}
