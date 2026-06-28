@@ -85,7 +85,7 @@ export default function AwsResourceTable() {
           {loadState === 'offline' && (
             <>
               <span className="w-2 h-2 rounded-full bg-[var(--color-text-tertiary)] shrink-0" />
-              <span className="text-xs text-[var(--color-text-tertiary)]">Stack offline — weekdays 8:30am–5:00pm ET</span>
+              <span className="text-xs text-[var(--color-text-tertiary)]">Stack offline — weekdays 9am–5pm ET</span>
             </>
           )}
         </div>
@@ -148,7 +148,7 @@ export default function AwsResourceTable() {
       </div>
 
       <p className="text-xs text-[var(--color-text-tertiary)] mt-3 leading-relaxed">
-        All ephemeral resources are destroyed nightly at 5:00pm ET and rebuilt from infrastructure-as-code at 8:30am ET weekdays.
+        All ephemeral resources are destroyed nightly at 5pm ET and rebuilt from infrastructure-as-code at 9am ET weekdays.
         {hasCosts && ' Costs reflect the last 30 days including partial days.'}
       </p>
     </div>

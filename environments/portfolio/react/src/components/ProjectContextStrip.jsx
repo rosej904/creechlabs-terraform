@@ -12,7 +12,7 @@ const COLUMNS = [
   {
     icon: 'ti-refresh',
     label: 'How?',
-    detail: 'Fully ephemeral - EKS, networking, and all workloads are declared in Terraform and ArgoCD. The entire stack is torn down at 5pm ET and rebuilt from scratch at 8:30am — automatically, every weekday.',
+    detail: 'Fully ephemeral - EKS, networking, and all workloads are declared in Terraform and ArgoCD. The entire stack is torn down at 5pm ET and rebuilt from scratch at 9am — automatically, every weekday.',
   },
   // {
   //   icon: 'ti-chart-dots-3',

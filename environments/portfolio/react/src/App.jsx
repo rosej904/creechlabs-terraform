@@ -17,6 +17,7 @@ import NotesDetail from './components/NotesDetail'
 import BioDetail from './components/BioDetail'
 import RoadmapDetail from './components/RoadmapDetail'
 import { useInfraStatus } from './hooks/useInfraStatus'
+import AnriWidget from './components/AnriWidget'
 
 
 function useIsMobile() {
@@ -118,13 +119,25 @@ function App() {
               <Footer />
             </div>
 
-            <div className="w-80 shrink-0 overflow-y-auto pr-1">
-              <TileStack {...tileStackProps} />
+            <div className="relative w-80 shrink-0 flex flex-col">
+              <div className="flex-1 overflow-y-auto pr-1">
+                <TileStack {...tileStackProps} />
+              </div>
+              {/* Bubble anchored to bottom of right column on desktop */}
+              <div className="sticky bottom-8 flex justify-end pt-3 pr-1 shrink-0 mx-6">
+                <AnriWidget
+                  grafanaStatus={status?.apps?.detail?.grafana?.status}
+                  bubbleStyle={{ position: 'relative', zIndex: 50 }}
+                />
+              </div>
             </div>
           </div>
         )}
 
       </div>
+
+    {/* Mobile-only fixed bubble — desktop uses the one inside the right column */}
+    {isMobile && <AnriWidget grafanaStatus={status?.apps?.detail?.grafana?.status} />}
 
       {showTopology && (
         <Modal title="Live AWS resources" onClose={() => setShowTopology(false)}>
