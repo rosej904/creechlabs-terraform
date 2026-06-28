@@ -16,10 +16,18 @@ const TILT_STYLE = `
   }
 `
 
+// const SUGGESTIONS = [
+//   'What is the current error rate for the checkout service?',
+//   'Are there any active SLO burn alerts right now?',
+//   'Show me p99 latency for the frontend service',
+// ]
+
 const SUGGESTIONS = [
-  'What is the current error rate for the checkout service?',
-  'Are there any active SLO burn alerts right now?',
-  'Show me p99 latency for the frontend service',
+  'Tell me about this portfolio?',
+  'Why is your name Anri?',
+  'What infrastructure is this built on?',
+  'Are there any active SLO burn alerts right now? (Coming Soon!)',
+  'What is the current error rate for the checkout service? (Coming Soon!)',
 ]
 
 // ─── Inline head for assistant replies ───────────────────────────────────────
