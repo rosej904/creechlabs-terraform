@@ -105,7 +105,7 @@ resource "aws_lambda_function" "chat" {
   function_name    = local.chat_function_name
   role             = aws_iam_role.chat_lambda.arn
   handler          = "handler.handler"
-  runtime          = "python3.12"
+  runtime          = "python3.13"
   filename         = data.archive_file.chat_lambda_zip.output_path
   source_code_hash = data.archive_file.chat_lambda_zip.output_base64sha256
   timeout          = 30
