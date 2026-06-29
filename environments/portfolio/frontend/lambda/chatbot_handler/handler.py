@@ -208,6 +208,8 @@ def emit_otlp_trace(
                                      "value": {"intValue": str(status_code)}},
                                     {"key": "gen_ai.prompt.preview",
                                      "value": {"stringValue": msg_preview}},
+                                    {"key": "service.source",
+                                     "value": {"stringValue": "lambda-external"}},
                                 ],
                             }
                         ],
@@ -273,6 +275,8 @@ def emit_otlp_metrics(
                          "value": {"stringValue": SERVICE_NAME}},
                         {"key": "cloud.provider",
                          "value": {"stringValue": "aws"}},
+                        {"key": "service.source",
+                         "value": {"stringValue": "lambda-external"}},
                     ]
                 },
                 "scopeMetrics": [
@@ -341,6 +345,8 @@ def emit_otlp_logs(
                          "value": {"stringValue": SERVICE_NAME}},
                         {"key": "service.version",
                          "value": {"stringValue": SERVICE_VERSION}},
+                        {"key": "service.source",
+                         "value": {"stringValue": "lambda-external"}},
                         {"key": "cloud.provider",
                          "value": {"stringValue": "aws"}},
                         {"key": "cloud.region",
