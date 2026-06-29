@@ -72,6 +72,11 @@ config:
       endpoint: "http://loki.observability.svc.cluster.local:3100/otlp"
       tls:
         insecure: true
+    loki:
+      endpoint: "http://loki.observability.svc.cluster.local:3100/otlp"
+      resource_to_labels: true
+      tls:
+        insecure: true
 
   receivers:
     otlp:
@@ -150,4 +155,4 @@ config:
       logs/external:
         receivers: [otlp/external]
         processors: [memory_limiter, attributes/external_source, batch]
-        exporters: [otlphttp/loki]
+        exporters: [loki]
