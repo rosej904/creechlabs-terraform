@@ -25,6 +25,36 @@ ports:
     containerPort: 8889
     servicePort: 8889
     protocol: TCP
+  otlp-http:
+    enabled: true
+    containerPort: 4318
+    servicePort: 4318
+    protocol: TCP
+  otlp-http-external:
+    enabled: true
+    containerPort: 4319
+    servicePort: 4319
+    protocol: TCP
+
+ingress:
+  enabled: true
+  ingressClassName: alb
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/group.name: portfolio
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:us-east-1:445606683808:certificate/bced14e9-9cc5-49f1-b1fa-f762b4de535a
+    alb.ingress.kubernetes.io/healthcheck-path: /
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    external-dns.alpha.kubernetes.io/hostname: otel.creechlabs.dev
+  hosts:
+    - host: otel.creechlabs.dev
+      paths:
+        - path: /
+          pathType: Prefix
+          port: 4319
 
 mode: deployment
 replicaCount: 1  # keep at 1 for portfolio cost
@@ -57,6 +87,10 @@ config:
           - job_name: 'tempo-internal-metrics'
             static_configs:
               - targets: ['tempo.observability.svc.cluster.local:3100']
+    otlp/external:
+      protocols:
+        http:
+          endpoint: 0.0.0.0:4319
 
   processors:
     batch: {}
@@ -82,6 +116,14 @@ config:
         - action: insert
           key: loki.resource.labels
           value: k8s.namespace.name, k8s.pod.name, k8s.deployment.name, service.name
+    attributes/external_source:
+      actions:
+        - action: insert
+          key: service.source
+          value: lambda-external
+        - action: insert
+          key: loki.resource.labels
+          value: service.name, service.source
 
   service:
     pipelines:
@@ -89,11 +131,23 @@ config:
         receivers: [otlp]
         processors: [memory_limiter, k8sattributes, batch]
         exporters: [otlp/tempo]
+      traces/external:
+        receivers: [otlp/external]
+        processors: [memory_limiter, attributes/external_source, batch]
+        exporters: [otlp/tempo]
       metrics:
         receivers: [otlp, prometheus]
         processors: [memory_limiter, k8sattributes, batch]
         exporters: [prometheusremotewrite]
+      metrics/external:
+        receivers: [otlp/external]
+        processors: [memory_limiter, attributes/external_source, batch]
+        exporters: [prometheusremotewrite]
       logs:
         receivers: [otlp]
         processors: [memory_limiter, k8sattributes, attributes/loki_hints, batch]
+        exporters: [otlphttp/loki]
+      logs/external:
+        receivers: [otlp/external]
+        processors: [memory_limiter, attributes/external_source, batch]
         exporters: [otlphttp/loki]

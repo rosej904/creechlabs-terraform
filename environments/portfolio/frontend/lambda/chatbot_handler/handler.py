@@ -3,13 +3,16 @@ cl-portfolio-chat Lambda handler
 - Streaming responses via Lambda response streaming
 - Daily token budget enforced via DynamoDB
 - Prompt caching on system prompt (90% cost reduction on cached input)
-- Graceful degradation when budget exhausted
+- OTel instrumentation: traces -> Tempo, metrics -> Prometheus, logs -> Loki
+- Graceful degradation when otel collector is unreachable (cluster offline)
 """
 
 import json
 import os
+import time
 import boto3
 import anthropic
+import requests
 from datetime import datetime, timezone
 from botocore.exceptions import ClientError
 
@@ -19,19 +22,25 @@ from botocore.exceptions import ClientError
 REGION           = os.environ.get("AWS_REGION", "us-east-1")
 SECRET_ARN       = os.environ["ANTHROPIC_SECRET_ARN"]
 BUDGET_TABLE     = os.environ["BUDGET_TABLE_NAME"]
-DAILY_TOKEN_CAP  = int(os.environ.get("DAILY_TOKEN_CAP", "500000"))  # ~$0.50/day at Haiku rates
-MAX_MESSAGES     = int(os.environ.get("MAX_MESSAGES", "20"))          # trim history beyond this
+DAILY_TOKEN_CAP  = int(os.environ.get("DAILY_TOKEN_CAP", "500000"))
+MAX_MESSAGES     = int(os.environ.get("MAX_MESSAGES", "20"))
 MODEL            = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5")
+OTEL_ENDPOINT    = os.environ.get("OTEL_ENDPOINT", "https://otel.creechlabs.dev")
+OTEL_SECRET_ARN  = os.environ.get("OTEL_SECRET_ARN", "")  # optional shared secret
+SERVICE_NAME     = "cl-portfolio-chat"
+SERVICE_VERSION  = "1.0.0"
 
 # ---------------------------------------------------------------------------
-# AWS clients (module-level = reused across warm Lambda invocations)
+# AWS clients (module-level = reused across warm invocations)
 # ---------------------------------------------------------------------------
-secrets_client  = boto3.client("secretsmanager", region_name=REGION)
-dynamodb        = boto3.resource("dynamodb", region_name=REGION)
-budget_table    = dynamodb.Table(BUDGET_TABLE)
+secrets_client = boto3.client("secretsmanager", region_name=REGION)
+dynamodb       = boto3.resource("dynamodb", region_name=REGION)
+budget_table   = dynamodb.Table(BUDGET_TABLE)
 
-# Cache the API key across warm invocations
+# Cached secrets across warm invocations
 _api_key: str | None = None
+_otel_token: str | None = None
+
 
 def get_api_key() -> str:
     global _api_key
@@ -39,6 +48,17 @@ def get_api_key() -> str:
         resp = secrets_client.get_secret_value(SecretId=SECRET_ARN)
         _api_key = resp["SecretString"]
     return _api_key
+
+
+def get_otel_token() -> str | None:
+    global _otel_token
+    if _otel_token is None and OTEL_SECRET_ARN:
+        try:
+            resp = secrets_client.get_secret_value(SecretId=OTEL_SECRET_ARN)
+            _otel_token = resp["SecretString"]
+        except ClientError:
+            _otel_token = None
+    return _otel_token
 
 
 # ---------------------------------------------------------------------------
@@ -99,6 +119,205 @@ Your display window has limited screen real estate. You MUST format responses to
 
 
 # ---------------------------------------------------------------------------
+# OTel helpers
+# ---------------------------------------------------------------------------
+def generate_trace_id() -> str:
+    import secrets
+    return secrets.token_hex(16)  # 32-char hex = 128-bit trace ID
+
+
+def generate_span_id() -> str:
+    import secrets
+    return secrets.token_hex(8)   # 16-char hex = 64-bit span ID
+
+
+def check_collector_health() -> bool:
+    """Fast health check — skip instrumentation if cluster is offline."""
+    try:
+        resp = requests.get(
+            f"{OTEL_ENDPOINT}/",
+            timeout=1.5,
+            headers={"X-Health-Check": "true"},
+        )
+        return resp.status_code < 500
+    except Exception:
+        return False
+
+
+def emit_otlp_trace(
+    trace_id: str,
+    span_id: str,
+    start_ns: int,
+    end_ns: int,
+    status_code: int,
+    input_tokens: int,
+    output_tokens: int,
+    cache_read_tokens: int,
+    total_tokens: int,
+    user_message: str,
+) -> None:
+    """Push a single span to the OTel collector via OTLP/HTTP."""
+
+    # Truncate user message for span attribute (avoid storing full PII in traces)
+    msg_preview = user_message[:100] + "..." if len(user_message) > 100 else user_message
+
+    payload = {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [
+                        {"key": "service.name",    "value": {"stringValue": SERVICE_NAME}},
+                        {"key": "service.version", "value": {"stringValue": SERVICE_VERSION}},
+                        {"key": "cloud.provider",  "value": {"stringValue": "aws"}},
+                        {"key": "cloud.region",    "value": {"stringValue": REGION}},
+                        {"key": "faas.name",       "value": {"stringValue": SERVICE_NAME}},
+                    ]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {"name": SERVICE_NAME, "version": SERVICE_VERSION},
+                        "spans": [
+                            {
+                                "traceId": trace_id,
+                                "spanId": span_id,
+                                "name": "gen_ai.chat",
+                                "kind": 2,  # SPAN_KIND_SERVER
+                                "startTimeUnixNano": str(start_ns),
+                                "endTimeUnixNano": str(end_ns),
+                                "status": {
+                                    "code": 1 if status_code == 200 else 2  # OK or ERROR
+                                },
+                                "attributes": [
+                                    # gen_ai semantic conventions
+                                    {"key": "gen_ai.system",
+                                     "value": {"stringValue": "anthropic"}},
+                                    {"key": "gen_ai.operation.name",
+                                     "value": {"stringValue": "chat"}},
+                                    {"key": "gen_ai.request.model",
+                                     "value": {"stringValue": MODEL}},
+                                    {"key": "gen_ai.usage.input_tokens",
+                                     "value": {"intValue": str(input_tokens)}},
+                                    {"key": "gen_ai.usage.output_tokens",
+                                     "value": {"intValue": str(output_tokens)}},
+                                    {"key": "gen_ai.usage.total_tokens",
+                                     "value": {"intValue": str(total_tokens)}},
+                                    {"key": "gen_ai.usage.cache_read_tokens",
+                                     "value": {"intValue": str(cache_read_tokens)}},
+                                    # request context
+                                    {"key": "http.status_code",
+                                     "value": {"intValue": str(status_code)}},
+                                    {"key": "gen_ai.prompt.preview",
+                                     "value": {"stringValue": msg_preview}},
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    headers = {"Content-Type": "application/json"}
+    token = get_otel_token()
+    if token:
+        headers["X-OTel-Token"] = token
+
+    try:
+        requests.post(
+            f"{OTEL_ENDPOINT}/v1/traces",
+            json=payload,
+            headers=headers,
+            timeout=3.0,
+        )
+    except Exception as e:
+        print(f"[WARN] OTel trace push failed (non-fatal): {e}")
+
+
+def emit_otlp_metrics(
+    input_tokens: int,
+    output_tokens: int,
+    cache_read_tokens: int,
+    total_tokens: int,
+    latency_ms: float,
+) -> None:
+    """Push token count and latency metrics to the OTel collector."""
+
+    now_ns = str(int(time.time() * 1e9))
+    common_attrs = [
+        {"key": "service.name", "value": {"stringValue": SERVICE_NAME}},
+        {"key": "gen_ai.system", "value": {"stringValue": "anthropic"}},
+        {"key": "gen_ai.request.model", "value": {"stringValue": MODEL}},
+    ]
+
+    def gauge(name: str, description: str, value: float, attrs: list) -> dict:
+        return {
+            "name": name,
+            "description": description,
+            "gauge": {
+                "dataPoints": [
+                    {
+                        "attributes": attrs,
+                        "timeUnixNano": now_ns,
+                        "asDouble": value,
+                    }
+                ]
+            },
+        }
+
+    payload = {
+        "resourceMetrics": [
+            {
+                "resource": {
+                    "attributes": [
+                        {"key": "service.name",
+                         "value": {"stringValue": SERVICE_NAME}},
+                        {"key": "cloud.provider",
+                         "value": {"stringValue": "aws"}},
+                    ]
+                },
+                "scopeMetrics": [
+                    {
+                        "scope": {"name": SERVICE_NAME},
+                        "metrics": [
+                            gauge("gen_ai.usage.input_tokens",
+                                  "Input tokens per request",
+                                  input_tokens, common_attrs),
+                            gauge("gen_ai.usage.output_tokens",
+                                  "Output tokens per request",
+                                  output_tokens, common_attrs),
+                            gauge("gen_ai.usage.cache_read_tokens",
+                                  "Cache read tokens per request",
+                                  cache_read_tokens, common_attrs),
+                            gauge("gen_ai.usage.total_tokens",
+                                  "Total tokens per request",
+                                  total_tokens, common_attrs),
+                            gauge("gen_ai.request.latency_ms",
+                                  "End-to-end chat request latency in ms",
+                                  latency_ms, common_attrs),
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    headers = {"Content-Type": "application/json"}
+    token = get_otel_token()
+    if token:
+        headers["X-OTel-Token"] = token
+
+    try:
+        requests.post(
+            f"{OTEL_ENDPOINT}/v1/metrics",
+            json=payload,
+            headers=headers,
+            timeout=3.0,
+        )
+    except Exception as e:
+        print(f"[WARN] OTel metrics push failed (non-fatal): {e}")
+
+
+# ---------------------------------------------------------------------------
 # Budget helpers
 # ---------------------------------------------------------------------------
 def today_key() -> str:
@@ -121,7 +340,6 @@ def increment_token_count(tokens: int) -> None:
             ExpressionAttributeValues={":t": tokens},
         )
     except ClientError as e:
-        # Non-fatal — log and continue
         print(f"[WARN] Failed to increment token count: {e}")
 
 
@@ -133,7 +351,7 @@ def budget_exhausted_response() -> dict:
             "message": (
                 "Today's chat quota has been reached — this is a portfolio demo with a "
                 "small daily token budget to keep costs manageable. Check back tomorrow, "
-                "or explore the live Grafana dashboard at grafana.creechlabs.dev while you wait."
+                "or explore the live Grafana dashboard at grafana.creechlabs.dev."
             ),
             "quota_exhausted": True,
         }),
@@ -160,9 +378,6 @@ def error_response(status: int, message: str) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# Message trimming  (keep last N to control token bleed on long sessions)
-# ---------------------------------------------------------------------------
 def trim_messages(messages: list) -> list:
     if len(messages) > MAX_MESSAGES:
         return messages[-MAX_MESSAGES:]
@@ -173,50 +388,60 @@ def trim_messages(messages: list) -> list:
 # Main handler
 # ---------------------------------------------------------------------------
 def handler(event: dict, context) -> dict:
+    start_time = time.time()
+    start_ns   = int(start_time * 1e9)
+
     # ── OPTIONS preflight ──────────────────────────────────────────────────
     if event.get("requestContext", {}).get("http", {}).get("method") == "OPTIONS":
         return {"statusCode": 204, "headers": cors_headers(), "body": ""}
 
     # ── Parse body ─────────────────────────────────────────────────────────
     try:
-        body = json.loads(event.get("body") or "{}")
+        body     = json.loads(event.get("body") or "{}")
         messages = body.get("messages", [])
         if not messages or not isinstance(messages, list):
             return error_response(400, "messages array is required")
     except (json.JSONDecodeError, TypeError):
         return error_response(400, "Invalid JSON body")
 
-    # ── Validate message shape ─────────────────────────────────────────────
     for msg in messages:
         if msg.get("role") not in ("user", "assistant") or not msg.get("content"):
-            return error_response(400, "Each message must have role (user|assistant) and content")
+            return error_response(400, "Each message must have role and content")
 
     # ── Budget check ───────────────────────────────────────────────────────
     tokens_today = get_tokens_used_today()
     if tokens_today >= DAILY_TOKEN_CAP:
-        print(f"[INFO] Budget exhausted: {tokens_today}/{DAILY_TOKEN_CAP} tokens used today")
+        print(f"[INFO] Budget exhausted: {tokens_today}/{DAILY_TOKEN_CAP}")
         return budget_exhausted_response()
+
+    # ── Check collector availability (non-blocking) ────────────────────────
+    collector_available = check_collector_health()
+    if not collector_available:
+        print("[INFO] OTel collector unreachable — instrumentation degraded")
+
+    # ── Trace/span IDs (generated regardless, used if collector is up) ─────
+    trace_id = generate_trace_id()
+    span_id  = generate_span_id()
 
     # ── Build request ──────────────────────────────────────────────────────
     messages = trim_messages(messages)
+    user_message = next(
+        (m["content"] for m in reversed(messages) if m["role"] == "user"), ""
+    )
 
-    # System prompt with cache_control so Anthropic caches it across requests.
-    # Cache hits cost 10% of standard input price — biggest single cost lever.
     system_with_cache = [
         {
             "type": "text",
             "text": SYSTEM_PROMPT,
-            "cache_control": {"type": "ephemeral"},  # 5-minute cache window
+            "cache_control": {"type": "ephemeral"},
         }
     ]
 
     # ── Call Anthropic API ─────────────────────────────────────────────────
+    status_code = 200
     try:
         client = anthropic.Anthropic(api_key=get_api_key())
 
-        # Non-streaming for now (Lambda response streaming requires
-        # additional API Gateway configuration — added in a follow-up).
-        # This still returns quickly for short responses.
         response = client.messages.create(
             model=MODEL,
             max_tokens=1024,
@@ -224,26 +449,40 @@ def handler(event: dict, context) -> dict:
             messages=messages,
         )
 
-        # Extract text content
         reply_text = "".join(
             block.text for block in response.content if block.type == "text"
         )
 
-        # Token accounting
-        usage = response.usage
-        total_tokens = usage.input_tokens + usage.output_tokens
-        cache_read   = getattr(usage, "cache_read_input_tokens", 0)
-        cache_write  = getattr(usage, "cache_creation_input_tokens", 0)
+        usage            = response.usage
+        input_tokens     = usage.input_tokens
+        output_tokens    = usage.output_tokens
+        cache_read       = getattr(usage, "cache_read_input_tokens", 0)
+        cache_write      = getattr(usage, "cache_creation_input_tokens", 0)
+        total_tokens     = input_tokens + output_tokens
+        latency_ms       = (time.time() - start_time) * 1000
+        end_ns           = int(time.time() * 1e9)
 
         print(
-            f"[INFO] tokens: input={usage.input_tokens} output={usage.output_tokens} "
+            f"[INFO] tokens: input={input_tokens} output={output_tokens} "
             f"cache_read={cache_read} cache_write={cache_write} "
-            f"model={MODEL}"
+            f"latency_ms={latency_ms:.0f} model={MODEL} "
+            f"collector_available={collector_available} "
+            f"trace_id={trace_id}"
         )
 
-        # Increment daily counter (use total_tokens; cache reads are cheap
-        # but we still want to track them for the observability demo)
         increment_token_count(total_tokens)
+
+        # ── OTel push (non-blocking, best-effort) ──────────────────────────
+        if collector_available:
+            emit_otlp_trace(
+                trace_id, span_id, start_ns, end_ns,
+                status_code, input_tokens, output_tokens,
+                cache_read, total_tokens, user_message,
+            )
+            emit_otlp_metrics(
+                input_tokens, output_tokens, cache_read,
+                total_tokens, latency_ms,
+            )
 
         return {
             "statusCode": 200,
@@ -251,25 +490,32 @@ def handler(event: dict, context) -> dict:
             "body": json.dumps({
                 "reply": reply_text,
                 "usage": {
-                    "input_tokens":  usage.input_tokens,
-                    "output_tokens": usage.output_tokens,
+                    "input_tokens":       input_tokens,
+                    "output_tokens":      output_tokens,
                     "cache_read_tokens":  cache_read,
                     "cache_write_tokens": cache_write,
-                    "total_tokens": total_tokens,
+                    "total_tokens":       total_tokens,
                 },
-                "model": MODEL,
-                "tokens_remaining_today": max(0, DAILY_TOKEN_CAP - tokens_today - total_tokens),
+                "model":   MODEL,
+                "trace_id": trace_id,   # expose for UI to show "view trace" link
+                "tokens_remaining_today": max(
+                    0, DAILY_TOKEN_CAP - tokens_today - total_tokens
+                ),
+                "instrumented": collector_available,
             }),
         }
 
     except anthropic.APIStatusError as e:
+        status_code = 502
         print(f"[ERROR] Anthropic API error: {e.status_code} {e.message}")
-        return error_response(502, "Upstream AI service error — please try again shortly")
+        return error_response(502, "Upstream AI service error — please try again")
 
     except anthropic.APIConnectionError as e:
+        status_code = 502
         print(f"[ERROR] Anthropic connection error: {e}")
-        return error_response(502, "Could not reach AI service — please try again shortly")
+        return error_response(502, "Could not reach AI service — please try again")
 
     except Exception as e:
+        status_code = 500
         print(f"[ERROR] Unexpected error: {e}")
         return error_response(500, "Internal server error")
