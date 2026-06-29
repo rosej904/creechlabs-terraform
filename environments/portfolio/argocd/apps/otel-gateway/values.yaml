@@ -30,7 +30,7 @@ ports:
     containerPort: 4318
     servicePort: 4318
     protocol: TCP
-  otlp-http-external:
+  otlp-http-ext:
     enabled: true
     containerPort: 4319
     servicePort: 4319
