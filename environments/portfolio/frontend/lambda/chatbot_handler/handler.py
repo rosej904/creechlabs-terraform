@@ -317,16 +317,111 @@ def emit_otlp_metrics(
         print(f"[WARN] OTel metrics push failed (non-fatal): {e}")
 
 
+
+def emit_otlp_logs(
+    trace_id: str,
+    span_id: str,
+    timestamp_ns: int,
+    input_tokens: int,
+    output_tokens: int,
+    cache_read_tokens: int,
+    total_tokens: int,
+    latency_ms: float,
+    status_code: int,
+    user_message_preview: str,
+) -> None:
+    """Push a structured log record to the OTel collector -> Loki."""
+
+    payload = {
+        "resourceLogs": [
+            {
+                "resource": {
+                    "attributes": [
+                        {"key": "service.name",
+                         "value": {"stringValue": SERVICE_NAME}},
+                        {"key": "service.version",
+                         "value": {"stringValue": SERVICE_VERSION}},
+                        {"key": "cloud.provider",
+                         "value": {"stringValue": "aws"}},
+                        {"key": "cloud.region",
+                         "value": {"stringValue": REGION}},
+                    ]
+                },
+                "scopeLogs": [
+                    {
+                        "scope": {"name": SERVICE_NAME},
+                        "logRecords": [
+                            {
+                                "timeUnixNano": str(timestamp_ns),
+                                "severityNumber": 9,    # INFO
+                                "severityText": "INFO",
+                                "traceId": trace_id,
+                                "spanId": span_id,
+                                "body": {
+                                    "stringValue": (
+                                        f"chat request: model={MODEL} "
+                                        f"input_tokens={input_tokens} "
+                                        f"output_tokens={output_tokens} "
+                                        f"latency_ms={latency_ms:.0f} "
+                                        f"status={status_code}"
+                                    )
+                                },
+                                "attributes": [
+                                    {"key": "gen_ai.system",
+                                     "value": {"stringValue": "anthropic"}},
+                                    {"key": "gen_ai.request.model",
+                                     "value": {"stringValue": MODEL}},
+                                    {"key": "gen_ai.usage.input_tokens",
+                                     "value": {"intValue": str(input_tokens)}},
+                                    {"key": "gen_ai.usage.output_tokens",
+                                     "value": {"intValue": str(output_tokens)}},
+                                    {"key": "gen_ai.usage.cache_read_tokens",
+                                     "value": {"intValue": str(cache_read_tokens)}},
+                                    {"key": "gen_ai.usage.total_tokens",
+                                     "value": {"intValue": str(total_tokens)}},
+                                    {"key": "gen_ai.request.latency_ms",
+                                     "value": {"doubleValue": latency_ms}},
+                                    {"key": "http.status_code",
+                                     "value": {"intValue": str(status_code)}},
+                                    {"key": "gen_ai.prompt.preview",
+                                     "value": {"stringValue": user_message_preview}},
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    headers = {"Content-Type": "application/json"}
+    token = get_otel_token()
+    if token:
+        headers["X-OTel-Token"] = token
+
+    try:
+        requests.post(
+            f"{OTEL_ENDPOINT}/v1/logs",
+            json=payload,
+            headers=headers,
+            timeout=3.0,
+        )
+    except Exception as e:
+        print(f"[WARN] OTel logs push failed (non-fatal): {e}")
+
+
 # ---------------------------------------------------------------------------
 # Budget helpers
 # ---------------------------------------------------------------------------
 def today_key() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    # Encode date into pk so no sort key is needed — matches table schema (pk only)
+    date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return f"budget:{date}"
 
 
 def get_tokens_used_today() -> int:
     try:
-        resp = budget_table.get_item(Key={"pk": "budget", "date": today_key()})
+        resp = budget_table.get_item(Key={"pk": today_key()})
         return int(resp.get("Item", {}).get("tokens_used", 0))
     except ClientError:
         return 0
@@ -334,10 +429,17 @@ def get_tokens_used_today() -> int:
 
 def increment_token_count(tokens: int) -> None:
     try:
+        # TTL: expire 48h after midnight UTC of the current day
+        expire_at = int(
+            (datetime.now(timezone.utc).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            ).timestamp()) + 172800  # 48 hours in seconds
+        )
         budget_table.update_item(
-            Key={"pk": "budget", "date": today_key()},
-            UpdateExpression="ADD tokens_used :t",
-            ExpressionAttributeValues={":t": tokens},
+            Key={"pk": today_key()},
+            UpdateExpression="ADD tokens_used :t SET #ttl = if_not_exists(#ttl, :exp)",
+            ExpressionAttributeNames={"#ttl": "ttl"},
+            ExpressionAttributeValues={":t": tokens, ":exp": expire_at},
         )
     except ClientError as e:
         print(f"[WARN] Failed to increment token count: {e}")
@@ -474,6 +576,7 @@ def handler(event: dict, context) -> dict:
 
         # ── OTel push (non-blocking, best-effort) ──────────────────────────
         if collector_available:
+            msg_preview = user_message[:100] + "..." if len(user_message) > 100 else user_message
             emit_otlp_trace(
                 trace_id, span_id, start_ns, end_ns,
                 status_code, input_tokens, output_tokens,
@@ -482,6 +585,12 @@ def handler(event: dict, context) -> dict:
             emit_otlp_metrics(
                 input_tokens, output_tokens, cache_read,
                 total_tokens, latency_ms,
+            )
+            emit_otlp_logs(
+                trace_id, span_id, end_ns,
+                input_tokens, output_tokens, cache_read,
+                total_tokens, latency_ms, status_code,
+                msg_preview,
             )
 
         return {
