@@ -150,4 +150,4 @@ config:
       logs/external:
         receivers: [otlp/external]
         processors: [memory_limiter, attributes/external_source, batch]
-        exporters: [otlphttp/loki]
+        exporters: [otlphttp/loki, debug]
