@@ -351,8 +351,6 @@ def emit_otlp_logs(
                          "value": {"stringValue": "aws"}},
                         {"key": "cloud.region",
                          "value": {"stringValue": REGION}},
-                        {"key": "loki.resource.labels",
-                         "value": {"stringValue": "service.name, service.source"}},
                     ]
                 },
                 "scopeLogs": [
