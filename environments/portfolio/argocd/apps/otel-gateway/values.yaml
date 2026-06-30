@@ -70,8 +70,6 @@ config:
         insecure: true
     otlphttp/loki:
       endpoint: "http://loki.observability.svc.cluster.local:3100/otlp"
-      resource_to_label_hints: 
-        enabled: true
       tls:
         insecure: true
 
