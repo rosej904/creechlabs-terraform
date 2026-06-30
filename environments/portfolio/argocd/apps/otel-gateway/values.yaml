@@ -72,6 +72,8 @@ config:
       endpoint: "http://loki.observability.svc.cluster.local:3100/otlp"
       tls:
         insecure: true
+    debug:
+      verbosity: detailed 
 
   receivers:
     otlp:
