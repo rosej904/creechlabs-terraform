@@ -17,7 +17,7 @@ spec:
 
     # Base Core Values Reference
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: main
+      targetRevision: feat/chatbot-instrumentation
       ref: baseValues
 
     # DataSources Values Reference
@@ -27,7 +27,7 @@ spec:
 
     # Alerting Values Reference
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: main
+      targetRevision: feat/chatbot-instrumentation
       ref: alertValues
 
   destination:
