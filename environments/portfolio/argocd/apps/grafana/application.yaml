@@ -22,7 +22,7 @@ spec:
 
     # DataSources Values Reference
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: main
+      targetRevision: feat/chatbot-instrumentation
       ref: dsValues
 
     # Alerting Values Reference
