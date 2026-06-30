@@ -208,8 +208,6 @@ def emit_otlp_trace(
                                      "value": {"intValue": str(status_code)}},
                                     {"key": "gen_ai.prompt.preview",
                                      "value": {"stringValue": msg_preview}},
-                                    {"key": "service.source",
-                                     "value": {"stringValue": "lambda-external"}},
                                 ],
                             }
                         ],
@@ -241,8 +239,16 @@ def emit_otlp_metrics(
     cache_read_tokens: int,
     total_tokens: int,
     latency_ms: float,
+    cumulative_daily_tokens: int | None,
 ) -> None:
-    """Push token count and latency metrics to the OTel collector."""
+    """
+    Push two metric shapes to the OTel collector:
+    - Gauges: per-request snapshots (latency, this request's token counts).
+      Good for "what just happened" panels — not aggregatable with rate()/increase().
+    - Counters: cumulative daily total, sourced from DynamoDB so Prometheus and
+      the budget ledger never disagree. Lets Grafana use rate()/increase() for
+      a proper token-usage-over-time graph.
+    """
 
     now_ns = str(int(time.time() * 1e9))
     common_attrs = [
@@ -266,6 +272,52 @@ def emit_otlp_metrics(
             },
         }
 
+    def counter(name: str, description: str, value: float, attrs: list) -> dict:
+        return {
+            "name": name,
+            "description": description,
+            "sum": {
+                "dataPoints": [
+                    {
+                        "attributes": attrs,
+                        "timeUnixNano": now_ns,
+                        "asDouble": value,
+                    }
+                ],
+                "aggregationTemporality": 2,  # AGGREGATION_TEMPORALITY_CUMULATIVE
+                "isMonotonic": True,
+            },
+        }
+
+    metrics = [
+        # Per-request gauges
+        gauge("gen_ai.usage.input_tokens",
+              "Input tokens for this request",
+              input_tokens, common_attrs),
+        gauge("gen_ai.usage.output_tokens",
+              "Output tokens for this request",
+              output_tokens, common_attrs),
+        gauge("gen_ai.usage.cache_read_tokens",
+              "Cache read tokens for this request",
+              cache_read_tokens, common_attrs),
+        gauge("gen_ai.usage.total_tokens",
+              "Total tokens for this request",
+              total_tokens, common_attrs),
+        gauge("gen_ai.request.latency_ms",
+              "End-to-end chat request latency in ms",
+              latency_ms, common_attrs),
+    ]
+
+    # Cumulative counter — only emit if we got a valid total back from DynamoDB.
+    # Sourced from the same ledger that enforces the budget cutoff, so this
+    # number and the budget check can never silently drift apart.
+    if cumulative_daily_tokens is not None:
+        metrics.append(
+            counter("gen_ai.usage.total_tokens_today",
+                    "Cumulative tokens used today (resets daily, sourced from budget ledger)",
+                    cumulative_daily_tokens, common_attrs)
+        )
+
     payload = {
         "resourceMetrics": [
             {
@@ -282,23 +334,7 @@ def emit_otlp_metrics(
                 "scopeMetrics": [
                     {
                         "scope": {"name": SERVICE_NAME},
-                        "metrics": [
-                            gauge("gen_ai.usage.input_tokens",
-                                  "Input tokens per request",
-                                  input_tokens, common_attrs),
-                            gauge("gen_ai.usage.output_tokens",
-                                  "Output tokens per request",
-                                  output_tokens, common_attrs),
-                            gauge("gen_ai.usage.cache_read_tokens",
-                                  "Cache read tokens per request",
-                                  cache_read_tokens, common_attrs),
-                            gauge("gen_ai.usage.total_tokens",
-                                  "Total tokens per request",
-                                  total_tokens, common_attrs),
-                            gauge("gen_ai.request.latency_ms",
-                                  "End-to-end chat request latency in ms",
-                                  latency_ms, common_attrs),
-                        ],
+                        "metrics": metrics,
                     }
                 ],
             }
@@ -345,8 +381,6 @@ def emit_otlp_logs(
                          "value": {"stringValue": SERVICE_NAME}},
                         {"key": "service.version",
                          "value": {"stringValue": SERVICE_VERSION}},
-                        {"key": "service.source",
-                         "value": {"stringValue": "lambda-external"}},
                         {"key": "cloud.provider",
                          "value": {"stringValue": "aws"}},
                         {"key": "cloud.region",
@@ -433,22 +467,19 @@ def get_tokens_used_today() -> int:
         return 0
 
 
-def increment_token_count(tokens: int) -> None:
+def increment_token_count(tokens: int) -> int | None:
+    """Returns the new cumulative daily total, or None if the update failed."""
     try:
-        # TTL: expire 48h after midnight UTC of the current day
-        expire_at = int(
-            (datetime.now(timezone.utc).replace(
-                hour=0, minute=0, second=0, microsecond=0
-            ).timestamp()) + 172800  # 48 hours in seconds
-        )
-        budget_table.update_item(
+        resp = budget_table.update_item(
             Key={"pk": today_key()},
-            UpdateExpression="ADD tokens_used :t SET #ttl = if_not_exists(#ttl, :exp)",
-            ExpressionAttributeNames={"#ttl": "ttl"},
-            ExpressionAttributeValues={":t": tokens, ":exp": expire_at},
+            UpdateExpression="ADD tokens_used :t",
+            ExpressionAttributeValues={":t": tokens},
+            ReturnValues="UPDATED_NEW",
         )
+        return int(resp.get("Attributes", {}).get("tokens_used", 0))
     except ClientError as e:
         print(f"[WARN] Failed to increment token count: {e}")
+        return None
 
 
 def budget_exhausted_response() -> dict:
@@ -578,7 +609,7 @@ def handler(event: dict, context) -> dict:
             f"trace_id={trace_id}"
         )
 
-        increment_token_count(total_tokens)
+        cumulative_daily_tokens = increment_token_count(total_tokens)
 
         # ── OTel push (non-blocking, best-effort) ──────────────────────────
         if collector_available:
@@ -590,7 +621,7 @@ def handler(event: dict, context) -> dict:
             )
             emit_otlp_metrics(
                 input_tokens, output_tokens, cache_read,
-                total_tokens, latency_ms,
+                total_tokens, latency_ms, cumulative_daily_tokens,
             )
             emit_otlp_logs(
                 trace_id, span_id, end_ns,
