@@ -108,3 +108,8 @@ variable "chat_max_messages" {
   type        = number
   default     = 20
 }
+
+variable "frontend_caller_key" {
+  description = "Static token sent by the React frontend to identify itself as cl-portfolio-frontend in LLM telemetry. Matches VITE_CALLER_KEY in the frontend build. Not a secret/Not auth — stored as a Lambda env var."
+  type        = string
+}

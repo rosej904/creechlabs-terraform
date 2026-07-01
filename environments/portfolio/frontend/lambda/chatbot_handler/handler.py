@@ -1,10 +1,12 @@
 """
 cl-portfolio-chat Lambda handler
-- Streaming responses via Lambda response streaming
 - Daily token budget enforced via DynamoDB
 - Prompt caching on system prompt (90% cost reduction on cached input)
 - OTel instrumentation: traces -> Tempo, metrics -> Prometheus, logs -> Loki
 - Graceful degradation when otel collector is unreachable (cluster offline)
+- Caller identity: single static frontend key, env-var based (no IdP needed
+  since this Lambda has exactly one caller — the portfolio frontend widget.
+  Future agent/service callers will route through LiteLLM proxy, not here.)
 """
 
 import json
@@ -19,16 +21,17 @@ from botocore.exceptions import ClientError
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-REGION           = os.environ.get("AWS_REGION", "us-east-1")
-SECRET_ARN       = os.environ["ANTHROPIC_SECRET_ARN"]
-BUDGET_TABLE     = os.environ["BUDGET_TABLE_NAME"]
-DAILY_TOKEN_CAP  = int(os.environ.get("DAILY_TOKEN_CAP", "500000"))
-MAX_MESSAGES     = int(os.environ.get("MAX_MESSAGES", "20"))
-MODEL            = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5")
-OTEL_ENDPOINT    = os.environ.get("OTEL_ENDPOINT", "https://otel.creechlabs.dev")
-OTEL_SECRET_ARN  = os.environ.get("OTEL_SECRET_ARN", "")  # optional shared secret
-SERVICE_NAME     = "cl-portfolio-chat"
-SERVICE_VERSION  = "1.0.0"
+REGION              = os.environ.get("AWS_REGION", "us-east-1")
+SECRET_ARN          = os.environ["ANTHROPIC_SECRET_ARN"]
+BUDGET_TABLE        = os.environ["BUDGET_TABLE_NAME"]
+DAILY_TOKEN_CAP     = int(os.environ.get("DAILY_TOKEN_CAP", "500000"))
+MAX_MESSAGES        = int(os.environ.get("MAX_MESSAGES", "20"))
+MODEL               = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5")
+OTEL_ENDPOINT       = os.environ.get("OTEL_ENDPOINT", "https://otel.creechlabs.dev")
+OTEL_SECRET_ARN     = os.environ.get("OTEL_SECRET_ARN", "")
+FRONTEND_CALLER_KEY = os.environ.get("FRONTEND_CALLER_KEY", "")
+SERVICE_NAME        = "cl-portfolio-chat"
+SERVICE_VERSION     = "1.0.0"
 
 # ---------------------------------------------------------------------------
 # AWS clients (module-level = reused across warm invocations)
@@ -59,6 +62,25 @@ def get_otel_token() -> str | None:
         except ClientError:
             _otel_token = None
     return _otel_token
+
+
+def get_caller_id(event: dict) -> str:
+    """
+    Identifies the calling service from the X-Caller-Key header.
+    This Lambda has exactly one legitimate caller: the portfolio frontend.
+    Any future agent/service callers will route through LiteLLM proxy
+    (a separate path) and never reach this Lambda.
+
+    - Header matches FRONTEND_CALLER_KEY -> cl-portfolio-frontend
+    - Header missing (expected for make test / direct invokes) -> anonymous-public
+    - Header present but wrong -> anonymous-public (attribution only, not auth)
+    """
+    if not FRONTEND_CALLER_KEY:
+        return "anonymous-public"
+    header_val = (event.get("headers") or {}).get("x-caller-key", "")
+    if header_val and header_val == FRONTEND_CALLER_KEY:
+        return "cl-portfolio-frontend"
+    return "anonymous-public"
 
 
 # ---------------------------------------------------------------------------
@@ -155,6 +177,7 @@ def emit_otlp_trace(
     cache_read_tokens: int,
     total_tokens: int,
     user_message: str,
+    caller_id: str,
 ) -> None:
     """Push a single span to the OTel collector via OTLP/HTTP."""
 
@@ -208,6 +231,8 @@ def emit_otlp_trace(
                                      "value": {"intValue": str(status_code)}},
                                     {"key": "gen_ai.prompt.preview",
                                      "value": {"stringValue": msg_preview}},
+                                    {"key": "gen_ai.caller.id",
+                                     "value": {"stringValue": caller_id}},
                                 ],
                             }
                         ],
@@ -240,14 +265,19 @@ def emit_otlp_metrics(
     total_tokens: int,
     latency_ms: float,
     cumulative_daily_tokens: int | None,
+    caller_id: str,
 ) -> None:
     """
     Push two metric shapes to the OTel collector:
     - Gauges: per-request snapshots (latency, this request's token counts).
-      Good for "what just happened" panels — not aggregatable with rate()/increase().
-    - Counters: cumulative daily total, sourced from DynamoDB so Prometheus and
-      the budget ledger never disagree. Lets Grafana use rate()/increase() for
-      a proper token-usage-over-time graph.
+      Tagged with caller_id since these genuinely reflect this caller's request —
+      Grafana can `sum by (caller_id)` these for a per-service usage breakdown.
+    - Counter: cumulative daily total, sourced from DynamoDB so Prometheus and
+      the budget ledger never disagree. NOT tagged with caller_id — the DynamoDB
+      ledger tracks one combined daily total across all callers today, so tagging
+      it per-caller would misrepresent it as a per-caller total. If per-caller
+      cumulative budgets are needed later, the DynamoDB key needs to be split by
+      caller_id first (pk: budget:{date}:{caller_id}) — noted as a TODO.
     """
 
     now_ns = str(int(time.time() * 1e9))
@@ -255,6 +285,9 @@ def emit_otlp_metrics(
         {"key": "service.name", "value": {"stringValue": SERVICE_NAME}},
         {"key": "gen_ai.system", "value": {"stringValue": "anthropic"}},
         {"key": "gen_ai.request.model", "value": {"stringValue": MODEL}},
+    ]
+    per_request_attrs = common_attrs + [
+        {"key": "gen_ai.caller.id", "value": {"stringValue": caller_id}},
     ]
 
     def gauge(name: str, description: str, value: float, attrs: list) -> dict:
@@ -290,27 +323,28 @@ def emit_otlp_metrics(
         }
 
     metrics = [
-        # Per-request gauges
+        # Per-request gauges — tagged with caller_id for per-caller breakdown
         gauge("gen_ai.usage.input_tokens",
               "Input tokens for this request",
-              input_tokens, common_attrs),
+              input_tokens, per_request_attrs),
         gauge("gen_ai.usage.output_tokens",
               "Output tokens for this request",
-              output_tokens, common_attrs),
+              output_tokens, per_request_attrs),
         gauge("gen_ai.usage.cache_read_tokens",
               "Cache read tokens for this request",
-              cache_read_tokens, common_attrs),
+              cache_read_tokens, per_request_attrs),
         gauge("gen_ai.usage.total_tokens",
               "Total tokens for this request",
-              total_tokens, common_attrs),
+              total_tokens, per_request_attrs),
         gauge("gen_ai.request.latency_ms",
               "End-to-end chat request latency in ms",
-              latency_ms, common_attrs),
+              latency_ms, per_request_attrs),
     ]
 
     # Cumulative counter — only emit if we got a valid total back from DynamoDB.
     # Sourced from the same ledger that enforces the budget cutoff, so this
     # number and the budget check can never silently drift apart.
+    # Intentionally NOT tagged with caller_id — see docstring above.
     if cumulative_daily_tokens is not None:
         metrics.append(
             counter("gen_ai.usage.total_tokens_today",
@@ -369,6 +403,7 @@ def emit_otlp_logs(
     latency_ms: float,
     status_code: int,
     user_message_preview: str,
+    caller_id: str,
 ) -> None:
     """Push a structured log record to the OTel collector -> Loki."""
 
@@ -399,7 +434,8 @@ def emit_otlp_logs(
                                 "spanId": span_id,
                                 "body": {
                                     "stringValue": (
-                                        f"chat request: model={MODEL} "
+                                        f"chat request: caller={caller_id} "
+                                        f"model={MODEL} "
                                         f"input_tokens={input_tokens} "
                                         f"output_tokens={output_tokens} "
                                         f"latency_ms={latency_ms:.0f} "
@@ -407,6 +443,8 @@ def emit_otlp_logs(
                                     )
                                 },
                                 "attributes": [
+                                    {"key": "gen_ai.caller.id",
+                                     "value": {"stringValue": caller_id}},
                                     {"key": "gen_ai.system",
                                      "value": {"stringValue": "anthropic"}},
                                     {"key": "gen_ai.request.model",
@@ -547,6 +585,9 @@ def handler(event: dict, context) -> dict:
         if msg.get("role") not in ("user", "assistant") or not msg.get("content"):
             return error_response(400, "Each message must have role and content")
 
+    # ── Resolve caller identity ──────────────────────────────────────────────
+    caller_id = get_caller_id(event)
+
     # ── Budget check ───────────────────────────────────────────────────────
     tokens_today = get_tokens_used_today()
     if tokens_today >= DAILY_TOKEN_CAP:
@@ -606,6 +647,7 @@ def handler(event: dict, context) -> dict:
             f"cache_read={cache_read} cache_write={cache_write} "
             f"latency_ms={latency_ms:.0f} model={MODEL} "
             f"collector_available={collector_available} "
+            f"caller_id={caller_id} "
             f"trace_id={trace_id}"
         )
 
@@ -618,16 +660,18 @@ def handler(event: dict, context) -> dict:
                 trace_id, span_id, start_ns, end_ns,
                 status_code, input_tokens, output_tokens,
                 cache_read, total_tokens, user_message,
+                caller_id,
             )
             emit_otlp_metrics(
                 input_tokens, output_tokens, cache_read,
                 total_tokens, latency_ms, cumulative_daily_tokens,
+                caller_id,
             )
             emit_otlp_logs(
                 trace_id, span_id, end_ns,
                 input_tokens, output_tokens, cache_read,
                 total_tokens, latency_ms, status_code,
-                msg_preview,
+                msg_preview, caller_id,
             )
 
         return {

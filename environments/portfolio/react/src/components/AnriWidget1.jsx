@@ -136,7 +136,10 @@ export default function AnriWidget({ grafanaStatus, bubbleStyle }) {
     try {
       const res  = await fetch(API_URL, {
         method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Caller-Key': import.meta.env.VITE_CALLER_KEY ?? '',
+        },
         body:    JSON.stringify({ messages: newMessages }),
       })
       const data = await res.json()
