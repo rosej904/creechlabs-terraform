@@ -125,7 +125,7 @@ resource "aws_lambda_function" "chat" {
       MAX_MESSAGES         = tostring(var.chat_max_messages)
       CLAUDE_MODEL         = var.claude_model
       OTEL_ENDPOINT        = "https://otel.creechlabs.dev"
-      OTEL_SECRET_ARN      = ""
+      FRONTEND_CALLER_KEY  = var.frontend_caller_key
     }
   }
 
