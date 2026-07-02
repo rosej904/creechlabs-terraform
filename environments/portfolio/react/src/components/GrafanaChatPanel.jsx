@@ -1,7 +1,7 @@
 import StatusDot from './StatusDot'
 
 const GRAFANA_URL =
-  'https://grafana.creechlabs.dev/d/adqr6cd/ai-workloads-llm-observability-and-metering?orgId=2&timezone=browser&kiosk&theme=dark&refresh=15s'
+  'https://grafana.creechlabs.dev/d/llmdemo-pub/ai-workloads-llm-observability-and-metering?orgId=2&timezone=browser&kiosk&theme=dark&refresh=15s'
 
 export default function GrafanaChatPanel({ status }) {
   const grafanaStatus = status?.apps?.detail?.grafana?.status ?? (status ? 'down' : undefined)

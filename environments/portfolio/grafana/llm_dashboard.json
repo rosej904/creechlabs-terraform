@@ -27,7 +27,7 @@
             "kind": "Panel",
             "spec": {
                 "id": 1,
-                "title": "Total LLM Requests",
+                "title": "Total LLM Requests - Daily #",
                 "description": "",
                 "links": [],
                 "data": {
