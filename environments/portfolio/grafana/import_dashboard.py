@@ -10,7 +10,7 @@ import urllib.error
 import base64
 
 def main():
-    if len(sys.argv) != 6:
+    if len(sys.argv) != 7:
         print(f"Usage: {sys.argv[0]} <grafana_url> <org_id> <dash_name> <admin_user> <admin_password> <dashboard_json_path>")
         sys.exit(1)
 
@@ -67,7 +67,7 @@ def main():
     def set_permissions():
         perm_status, perm_body = api_call(
             "POST",
-            "/api/dashboards/uid/demo-pub/permissions",
+            f"/api/dashboards/uid/{dash_name}/permissions",
             data={"items": [
                 {"role": "Viewer", "permission": 1},
                 {"role": "Editor", "permission": 2}
@@ -92,7 +92,7 @@ def main():
 
     elif status == 409:
         print("Dashboard already exists, updating via PUT...")
-        status2, body2 = api_call("PUT", f"{dashboard_url}/demo-pub", data=payload)
+        status2, body2 = api_call("PUT", f"{dashboard_url}/{dash_name}", data=payload)
         print(f"PUT dashboard: HTTP {status2}")
         if status2 in (200, 201):
             print("Dashboard updated successfully")
