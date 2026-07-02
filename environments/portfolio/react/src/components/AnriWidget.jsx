@@ -186,7 +186,7 @@ export default function AnriWidget({ grafanaStatus, bubbleStyle }) {
             className="fixed bottom-6 right-6 border border-[var(--color-border)] rounded-2xl flex overflow-hidden transition-all duration-[250ms] ease-out"
             style={{
               zIndex: 9999,
-              width: 'min(860px, calc(100vw - 3rem))',
+              width: 'min(1000px, calc(100vw - 3rem))',
               height: 'min(760px, calc(100dvh - 5rem))',
               transformOrigin: 'bottom right',
               transform: visible ? 'scale(1)' : 'scale(0.15)',
