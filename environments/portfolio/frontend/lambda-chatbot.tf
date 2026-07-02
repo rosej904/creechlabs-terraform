@@ -94,20 +94,26 @@ resource "aws_iam_role_policy" "chat_lambda_policy" {
 # `make build` installs deps into lambda/chat/package/ before terraform plan.
 # archive_file zips the result; source_code_hash triggers redeployment on change.
 # ---------------------------------------------------------------------------
-data "archive_file" "chat_lambda_zip" {
-  type        = "zip"
-  source_dir  = local.chat_lambda_src
-  output_path = "${path.module}/lambda/chat_lambda.zip"
-  excludes    = ["__pycache__", "*.pyc", ".pytest_cache"]
-}
+
+# archive_file removed: it rebuilds the zip at plan time using the system Python,
+# which may not match the Lambda runtime version. Using a pre-built zip via make build
+# ensures the correct Python version and vendored deps are packaged.
+# Deploy workflow: make build && make deploy (Lambda code changes)
+#                  make build && terraform apply (infrastructure changes)
+#data "archive_file" "chat_lambda_zip" {
+#  type        = "zip"
+#  source_dir  = local.chat_lambda_src
+#  output_path = "${path.module}/lambda/chat_lambda.zip"
+#  excludes    = ["__pycache__", "*.pyc", ".pytest_cache"]
+#}
 
 resource "aws_lambda_function" "chat" {
   function_name    = local.chat_function_name
   role             = aws_iam_role.chat_lambda.arn
   handler          = "handler.handler"
   runtime          = "python3.13"
-  filename         = data.archive_file.chat_lambda_zip.output_path
-  source_code_hash = data.archive_file.chat_lambda_zip.output_base64sha256
+  filename         = "${path.module}/lambda/chat_lambda.zip"
+  source_code_hash = filebase64sha256("${path.module}/lambda/chat_lambda.zip")
   timeout          = 30
   memory_size      = 256
 
@@ -118,6 +124,8 @@ resource "aws_lambda_function" "chat" {
       DAILY_TOKEN_CAP      = tostring(var.chat_daily_token_cap)
       MAX_MESSAGES         = tostring(var.chat_max_messages)
       CLAUDE_MODEL         = var.claude_model
+      OTEL_ENDPOINT        = "https://otel.creechlabs.dev"
+      FRONTEND_CALLER_KEY  = var.frontend_caller_key
     }
   }
 

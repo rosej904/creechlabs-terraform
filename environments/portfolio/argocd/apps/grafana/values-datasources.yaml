@@ -42,6 +42,8 @@ datasources:
             tags:
               - key: 'k8s.deployment.name'
                 value: 'k8s_deployment_name'
+              - key: 'service.name'
+                value: 'service_name'
           tracesToMetrics:
             datasourceUid: prometheus
             tags:

@@ -1,3 +1,3 @@
-# boto3 is provided by the Lambda Python 3.12 runtime — do not include it here
-# or you'll bloat the deployment package unnecessarily.
+# boto3 is provided by the Lambda Python 3.13 runtime — do not include it here
 anthropic==0.40.0
+requests==2.32.3

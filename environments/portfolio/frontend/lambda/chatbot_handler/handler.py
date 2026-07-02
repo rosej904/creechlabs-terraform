@@ -1,37 +1,49 @@
 """
 cl-portfolio-chat Lambda handler
-- Streaming responses via Lambda response streaming
 - Daily token budget enforced via DynamoDB
 - Prompt caching on system prompt (90% cost reduction on cached input)
-- Graceful degradation when budget exhausted
+- OTel instrumentation: traces -> Tempo, metrics -> Prometheus, logs -> Loki
+- Graceful degradation when otel collector is unreachable (cluster offline)
+- Caller identity: single static frontend key, env-var based (no IdP needed
+  since this Lambda has exactly one caller — the portfolio frontend widget.
+  Future agent/service callers will route through LiteLLM proxy, not here.)
 """
 
 import json
 import os
+import time
 import boto3
 import anthropic
+import requests
 from datetime import datetime, timezone
 from botocore.exceptions import ClientError
 
 # ---------------------------------------------------------------------------
 # Config
 # ---------------------------------------------------------------------------
-REGION           = os.environ.get("AWS_REGION", "us-east-1")
-SECRET_ARN       = os.environ["ANTHROPIC_SECRET_ARN"]
-BUDGET_TABLE     = os.environ["BUDGET_TABLE_NAME"]
-DAILY_TOKEN_CAP  = int(os.environ.get("DAILY_TOKEN_CAP", "500000"))  # ~$0.50/day at Haiku rates
-MAX_MESSAGES     = int(os.environ.get("MAX_MESSAGES", "20"))          # trim history beyond this
-MODEL            = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5")
+REGION              = os.environ.get("AWS_REGION", "us-east-1")
+SECRET_ARN          = os.environ["ANTHROPIC_SECRET_ARN"]
+BUDGET_TABLE        = os.environ["BUDGET_TABLE_NAME"]
+DAILY_TOKEN_CAP     = int(os.environ.get("DAILY_TOKEN_CAP", "500000"))
+MAX_MESSAGES        = int(os.environ.get("MAX_MESSAGES", "20"))
+MODEL               = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5")
+OTEL_ENDPOINT       = os.environ.get("OTEL_ENDPOINT", "https://otel.creechlabs.dev")
+OTEL_SECRET_ARN     = os.environ.get("OTEL_SECRET_ARN", "")
+FRONTEND_CALLER_KEY = os.environ.get("FRONTEND_CALLER_KEY", "")
+SERVICE_NAME        = "cl-portfolio-chat"
+SERVICE_VERSION     = "1.0.0"
 
 # ---------------------------------------------------------------------------
-# AWS clients (module-level = reused across warm Lambda invocations)
+# AWS clients (module-level = reused across warm invocations)
 # ---------------------------------------------------------------------------
-secrets_client  = boto3.client("secretsmanager", region_name=REGION)
-dynamodb        = boto3.resource("dynamodb", region_name=REGION)
-budget_table    = dynamodb.Table(BUDGET_TABLE)
+secrets_client = boto3.client("secretsmanager", region_name=REGION)
+dynamodb       = boto3.resource("dynamodb", region_name=REGION)
+budget_table   = dynamodb.Table(BUDGET_TABLE)
 
-# Cache the API key across warm invocations
+# Cached secrets across warm invocations
 _api_key: str | None = None
+_otel_token: str | None = None
+
 
 def get_api_key() -> str:
     global _api_key
@@ -39,6 +51,36 @@ def get_api_key() -> str:
         resp = secrets_client.get_secret_value(SecretId=SECRET_ARN)
         _api_key = resp["SecretString"]
     return _api_key
+
+
+def get_otel_token() -> str | None:
+    global _otel_token
+    if _otel_token is None and OTEL_SECRET_ARN:
+        try:
+            resp = secrets_client.get_secret_value(SecretId=OTEL_SECRET_ARN)
+            _otel_token = resp["SecretString"]
+        except ClientError:
+            _otel_token = None
+    return _otel_token
+
+
+def get_caller_id(event: dict) -> str:
+    """
+    Identifies the calling service from the X-Caller-Key header.
+    This Lambda has exactly one legitimate caller: the portfolio frontend.
+    Any future agent/service callers will route through LiteLLM proxy
+    (a separate path) and never reach this Lambda.
+
+    - Header matches FRONTEND_CALLER_KEY -> cl-portfolio-frontend
+    - Header missing (expected for make test / direct invokes) -> anonymous-public
+    - Header present but wrong -> anonymous-public (attribution only, not auth)
+    """
+    if not FRONTEND_CALLER_KEY:
+        return "anonymous-public"
+    header_val = (event.get("headers") or {}).get("x-caller-key", "")
+    if header_val and header_val == FRONTEND_CALLER_KEY:
+        return "cl-portfolio-frontend"
+    return "anonymous-public"
 
 
 # ---------------------------------------------------------------------------
@@ -99,30 +141,383 @@ Your display window has limited screen real estate. You MUST format responses to
 
 
 # ---------------------------------------------------------------------------
+# OTel helpers
+# ---------------------------------------------------------------------------
+def generate_trace_id() -> str:
+    import secrets
+    return secrets.token_hex(16)  # 32-char hex = 128-bit trace ID
+
+
+def generate_span_id() -> str:
+    import secrets
+    return secrets.token_hex(8)   # 16-char hex = 64-bit span ID
+
+
+def check_collector_health() -> bool:
+    """Fast health check — skip instrumentation if cluster is offline."""
+    try:
+        resp = requests.get(
+            f"{OTEL_ENDPOINT}/",
+            timeout=1.5,
+            headers={"X-Health-Check": "true"},
+        )
+        return resp.status_code < 500
+    except Exception:
+        return False
+
+
+def emit_otlp_trace(
+    trace_id: str,
+    span_id: str,
+    start_ns: int,
+    end_ns: int,
+    status_code: int,
+    input_tokens: int,
+    output_tokens: int,
+    cache_read_tokens: int,
+    total_tokens: int,
+    user_message: str,
+    caller_id: str,
+) -> None:
+    """Push a single span to the OTel collector via OTLP/HTTP."""
+
+    # Truncate user message for span attribute (avoid storing full PII in traces)
+    msg_preview = user_message[:100] + "..." if len(user_message) > 100 else user_message
+
+    payload = {
+        "resourceSpans": [
+            {
+                "resource": {
+                    "attributes": [
+                        {"key": "service.name",    "value": {"stringValue": SERVICE_NAME}},
+                        {"key": "service.version", "value": {"stringValue": SERVICE_VERSION}},
+                        {"key": "cloud.provider",  "value": {"stringValue": "aws"}},
+                        {"key": "cloud.region",    "value": {"stringValue": REGION}},
+                        {"key": "faas.name",       "value": {"stringValue": SERVICE_NAME}},
+                    ]
+                },
+                "scopeSpans": [
+                    {
+                        "scope": {"name": SERVICE_NAME, "version": SERVICE_VERSION},
+                        "spans": [
+                            {
+                                "traceId": trace_id,
+                                "spanId": span_id,
+                                "name": "gen_ai.chat",
+                                "kind": 2,  # SPAN_KIND_SERVER
+                                "startTimeUnixNano": str(start_ns),
+                                "endTimeUnixNano": str(end_ns),
+                                "status": {
+                                    "code": 1 if status_code == 200 else 2  # OK or ERROR
+                                },
+                                "attributes": [
+                                    # gen_ai semantic conventions
+                                    {"key": "gen_ai.system",
+                                     "value": {"stringValue": "anthropic"}},
+                                    {"key": "gen_ai.operation.name",
+                                     "value": {"stringValue": "chat"}},
+                                    {"key": "gen_ai.request.model",
+                                     "value": {"stringValue": MODEL}},
+                                    {"key": "gen_ai.usage.input_tokens",
+                                     "value": {"intValue": str(input_tokens)}},
+                                    {"key": "gen_ai.usage.output_tokens",
+                                     "value": {"intValue": str(output_tokens)}},
+                                    {"key": "gen_ai.usage.total_tokens",
+                                     "value": {"intValue": str(total_tokens)}},
+                                    {"key": "gen_ai.usage.cache_read_tokens",
+                                     "value": {"intValue": str(cache_read_tokens)}},
+                                    # request context
+                                    {"key": "http.status_code",
+                                     "value": {"intValue": str(status_code)}},
+                                    {"key": "gen_ai.prompt.preview",
+                                     "value": {"stringValue": msg_preview}},
+                                    {"key": "gen_ai.caller.id",
+                                     "value": {"stringValue": caller_id}},
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    headers = {"Content-Type": "application/json"}
+    token = get_otel_token()
+    if token:
+        headers["X-OTel-Token"] = token
+
+    try:
+        requests.post(
+            f"{OTEL_ENDPOINT}/v1/traces",
+            json=payload,
+            headers=headers,
+            timeout=3.0,
+        )
+    except Exception as e:
+        print(f"[WARN] OTel trace push failed (non-fatal): {e}")
+
+
+def emit_otlp_metrics(
+    input_tokens: int,
+    output_tokens: int,
+    cache_read_tokens: int,
+    total_tokens: int,
+    latency_ms: float,
+    cumulative_daily_tokens: int | None,
+    caller_id: str,
+) -> None:
+    """
+    Push two metric shapes to the OTel collector:
+    - Gauges: per-request snapshots (latency, this request's token counts).
+      Tagged with caller_id since these genuinely reflect this caller's request —
+      Grafana can `sum by (caller_id)` these for a per-service usage breakdown.
+    - Counter: cumulative daily total, sourced from DynamoDB so Prometheus and
+      the budget ledger never disagree. NOT tagged with caller_id — the DynamoDB
+      ledger tracks one combined daily total across all callers today, so tagging
+      it per-caller would misrepresent it as a per-caller total. If per-caller
+      cumulative budgets are needed later, the DynamoDB key needs to be split by
+      caller_id first (pk: budget:{date}:{caller_id}) — noted as a TODO.
+    """
+
+    now_ns = str(int(time.time() * 1e9))
+    common_attrs = [
+        {"key": "service.name", "value": {"stringValue": SERVICE_NAME}},
+        {"key": "gen_ai.system", "value": {"stringValue": "anthropic"}},
+        {"key": "gen_ai.request.model", "value": {"stringValue": MODEL}},
+    ]
+    per_request_attrs = common_attrs + [
+        {"key": "gen_ai.caller.id", "value": {"stringValue": caller_id}},
+    ]
+
+    def gauge(name: str, description: str, value: float, attrs: list) -> dict:
+        return {
+            "name": name,
+            "description": description,
+            "gauge": {
+                "dataPoints": [
+                    {
+                        "attributes": attrs,
+                        "timeUnixNano": now_ns,
+                        "asDouble": value,
+                    }
+                ]
+            },
+        }
+
+    def counter(name: str, description: str, value: float, attrs: list) -> dict:
+        return {
+            "name": name,
+            "description": description,
+            "sum": {
+                "dataPoints": [
+                    {
+                        "attributes": attrs,
+                        "timeUnixNano": now_ns,
+                        "asDouble": value,
+                    }
+                ],
+                "aggregationTemporality": 2,  # AGGREGATION_TEMPORALITY_CUMULATIVE
+                "isMonotonic": True,
+            },
+        }
+
+    metrics = [
+        # Per-request gauges — tagged with caller_id for per-caller breakdown
+        gauge("gen_ai.usage.input_tokens",
+              "Input tokens for this request",
+              input_tokens, per_request_attrs),
+        gauge("gen_ai.usage.output_tokens",
+              "Output tokens for this request",
+              output_tokens, per_request_attrs),
+        gauge("gen_ai.usage.cache_read_tokens",
+              "Cache read tokens for this request",
+              cache_read_tokens, per_request_attrs),
+        gauge("gen_ai.usage.total_tokens",
+              "Total tokens for this request",
+              total_tokens, per_request_attrs),
+        gauge("gen_ai.request.latency_ms",
+              "End-to-end chat request latency in ms",
+              latency_ms, per_request_attrs),
+    ]
+
+    # Cumulative counter — only emit if we got a valid total back from DynamoDB.
+    # Sourced from the same ledger that enforces the budget cutoff, so this
+    # number and the budget check can never silently drift apart.
+    # Intentionally NOT tagged with caller_id — see docstring above.
+    if cumulative_daily_tokens is not None:
+        metrics.append(
+            counter("gen_ai.usage.total_tokens_today",
+                    "Cumulative tokens used today (resets daily, sourced from budget ledger)",
+                    cumulative_daily_tokens, common_attrs)
+        )
+
+    payload = {
+        "resourceMetrics": [
+            {
+                "resource": {
+                    "attributes": [
+                        {"key": "service.name",
+                         "value": {"stringValue": SERVICE_NAME}},
+                        {"key": "cloud.provider",
+                         "value": {"stringValue": "aws"}},
+                        {"key": "service.source",
+                         "value": {"stringValue": "lambda-external"}},
+                    ]
+                },
+                "scopeMetrics": [
+                    {
+                        "scope": {"name": SERVICE_NAME},
+                        "metrics": metrics,
+                    }
+                ],
+            }
+        ]
+    }
+
+    headers = {"Content-Type": "application/json"}
+    token = get_otel_token()
+    if token:
+        headers["X-OTel-Token"] = token
+
+    try:
+        requests.post(
+            f"{OTEL_ENDPOINT}/v1/metrics",
+            json=payload,
+            headers=headers,
+            timeout=3.0,
+        )
+    except Exception as e:
+        print(f"[WARN] OTel metrics push failed (non-fatal): {e}")
+
+
+
+def emit_otlp_logs(
+    trace_id: str,
+    span_id: str,
+    timestamp_ns: int,
+    input_tokens: int,
+    output_tokens: int,
+    cache_read_tokens: int,
+    total_tokens: int,
+    latency_ms: float,
+    status_code: int,
+    user_message_preview: str,
+    caller_id: str,
+) -> None:
+    """Push a structured log record to the OTel collector -> Loki."""
+
+    payload = {
+        "resourceLogs": [
+            {
+                "resource": {
+                    "attributes": [
+                        {"key": "service.name",
+                         "value": {"stringValue": SERVICE_NAME}},
+                        {"key": "service.version",
+                         "value": {"stringValue": SERVICE_VERSION}},
+                        {"key": "cloud.provider",
+                         "value": {"stringValue": "aws"}},
+                        {"key": "cloud.region",
+                         "value": {"stringValue": REGION}},
+                    ]
+                },
+                "scopeLogs": [
+                    {
+                        "scope": {"name": SERVICE_NAME},
+                        "logRecords": [
+                            {
+                                "timeUnixNano": str(timestamp_ns),
+                                "severityNumber": 9,    # INFO
+                                "severityText": "INFO",
+                                "traceId": trace_id,
+                                "spanId": span_id,
+                                "body": {
+                                    "stringValue": (
+                                        f"chat request: caller={caller_id} "
+                                        f"model={MODEL} "
+                                        f"input_tokens={input_tokens} "
+                                        f"output_tokens={output_tokens} "
+                                        f"latency_ms={latency_ms:.0f} "
+                                        f"status={status_code}"
+                                    )
+                                },
+                                "attributes": [
+                                    {"key": "gen_ai.caller.id",
+                                     "value": {"stringValue": caller_id}},
+                                    {"key": "gen_ai.system",
+                                     "value": {"stringValue": "anthropic"}},
+                                    {"key": "gen_ai.request.model",
+                                     "value": {"stringValue": MODEL}},
+                                    {"key": "gen_ai.usage.input_tokens",
+                                     "value": {"intValue": str(input_tokens)}},
+                                    {"key": "gen_ai.usage.output_tokens",
+                                     "value": {"intValue": str(output_tokens)}},
+                                    {"key": "gen_ai.usage.cache_read_tokens",
+                                     "value": {"intValue": str(cache_read_tokens)}},
+                                    {"key": "gen_ai.usage.total_tokens",
+                                     "value": {"intValue": str(total_tokens)}},
+                                    {"key": "gen_ai.request.latency_ms",
+                                     "value": {"doubleValue": latency_ms}},
+                                    {"key": "http.status_code",
+                                     "value": {"intValue": str(status_code)}},
+                                    {"key": "gen_ai.prompt.preview",
+                                     "value": {"stringValue": user_message_preview}},
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    }
+
+    headers = {"Content-Type": "application/json"}
+    token = get_otel_token()
+    if token:
+        headers["X-OTel-Token"] = token
+
+    try:
+        requests.post(
+            f"{OTEL_ENDPOINT}/v1/logs",
+            json=payload,
+            headers=headers,
+            timeout=3.0,
+        )
+    except Exception as e:
+        print(f"[WARN] OTel logs push failed (non-fatal): {e}")
+
+
+# ---------------------------------------------------------------------------
 # Budget helpers
 # ---------------------------------------------------------------------------
 def today_key() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    # Encode date into pk so no sort key is needed — matches table schema (pk only)
+    date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return f"budget:{date}"
 
 
 def get_tokens_used_today() -> int:
     try:
-        resp = budget_table.get_item(Key={"pk": "budget", "date": today_key()})
+        resp = budget_table.get_item(Key={"pk": today_key()})
         return int(resp.get("Item", {}).get("tokens_used", 0))
     except ClientError:
         return 0
 
 
-def increment_token_count(tokens: int) -> None:
+def increment_token_count(tokens: int) -> int | None:
+    """Returns the new cumulative daily total, or None if the update failed."""
     try:
-        budget_table.update_item(
-            Key={"pk": "budget", "date": today_key()},
+        resp = budget_table.update_item(
+            Key={"pk": today_key()},
             UpdateExpression="ADD tokens_used :t",
             ExpressionAttributeValues={":t": tokens},
+            ReturnValues="UPDATED_NEW",
         )
+        return int(resp.get("Attributes", {}).get("tokens_used", 0))
     except ClientError as e:
-        # Non-fatal — log and continue
         print(f"[WARN] Failed to increment token count: {e}")
+        return None
 
 
 def budget_exhausted_response() -> dict:
@@ -133,7 +528,7 @@ def budget_exhausted_response() -> dict:
             "message": (
                 "Today's chat quota has been reached — this is a portfolio demo with a "
                 "small daily token budget to keep costs manageable. Check back tomorrow, "
-                "or explore the live Grafana dashboard at grafana.creechlabs.dev while you wait."
+                "or explore the live Grafana dashboard at grafana.creechlabs.dev."
             ),
             "quota_exhausted": True,
         }),
@@ -160,9 +555,6 @@ def error_response(status: int, message: str) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# Message trimming  (keep last N to control token bleed on long sessions)
-# ---------------------------------------------------------------------------
 def trim_messages(messages: list) -> list:
     if len(messages) > MAX_MESSAGES:
         return messages[-MAX_MESSAGES:]
@@ -173,50 +565,63 @@ def trim_messages(messages: list) -> list:
 # Main handler
 # ---------------------------------------------------------------------------
 def handler(event: dict, context) -> dict:
+    start_time = time.time()
+    start_ns   = int(start_time * 1e9)
+
     # ── OPTIONS preflight ──────────────────────────────────────────────────
     if event.get("requestContext", {}).get("http", {}).get("method") == "OPTIONS":
         return {"statusCode": 204, "headers": cors_headers(), "body": ""}
 
     # ── Parse body ─────────────────────────────────────────────────────────
     try:
-        body = json.loads(event.get("body") or "{}")
+        body     = json.loads(event.get("body") or "{}")
         messages = body.get("messages", [])
         if not messages or not isinstance(messages, list):
             return error_response(400, "messages array is required")
     except (json.JSONDecodeError, TypeError):
         return error_response(400, "Invalid JSON body")
 
-    # ── Validate message shape ─────────────────────────────────────────────
     for msg in messages:
         if msg.get("role") not in ("user", "assistant") or not msg.get("content"):
-            return error_response(400, "Each message must have role (user|assistant) and content")
+            return error_response(400, "Each message must have role and content")
+
+    # ── Resolve caller identity ──────────────────────────────────────────────
+    caller_id = get_caller_id(event)
 
     # ── Budget check ───────────────────────────────────────────────────────
     tokens_today = get_tokens_used_today()
     if tokens_today >= DAILY_TOKEN_CAP:
-        print(f"[INFO] Budget exhausted: {tokens_today}/{DAILY_TOKEN_CAP} tokens used today")
+        print(f"[INFO] Budget exhausted: {tokens_today}/{DAILY_TOKEN_CAP}")
         return budget_exhausted_response()
+
+    # ── Check collector availability (non-blocking) ────────────────────────
+    collector_available = check_collector_health()
+    if not collector_available:
+        print("[INFO] OTel collector unreachable — instrumentation degraded")
+
+    # ── Trace/span IDs (generated regardless, used if collector is up) ─────
+    trace_id = generate_trace_id()
+    span_id  = generate_span_id()
 
     # ── Build request ──────────────────────────────────────────────────────
     messages = trim_messages(messages)
+    user_message = next(
+        (m["content"] for m in reversed(messages) if m["role"] == "user"), ""
+    )
 
-    # System prompt with cache_control so Anthropic caches it across requests.
-    # Cache hits cost 10% of standard input price — biggest single cost lever.
     system_with_cache = [
         {
             "type": "text",
             "text": SYSTEM_PROMPT,
-            "cache_control": {"type": "ephemeral"},  # 5-minute cache window
+            "cache_control": {"type": "ephemeral"},
         }
     ]
 
     # ── Call Anthropic API ─────────────────────────────────────────────────
+    status_code = 200
     try:
         client = anthropic.Anthropic(api_key=get_api_key())
 
-        # Non-streaming for now (Lambda response streaming requires
-        # additional API Gateway configuration — added in a follow-up).
-        # This still returns quickly for short responses.
         response = client.messages.create(
             model=MODEL,
             max_tokens=1024,
@@ -224,26 +629,50 @@ def handler(event: dict, context) -> dict:
             messages=messages,
         )
 
-        # Extract text content
         reply_text = "".join(
             block.text for block in response.content if block.type == "text"
         )
 
-        # Token accounting
-        usage = response.usage
-        total_tokens = usage.input_tokens + usage.output_tokens
-        cache_read   = getattr(usage, "cache_read_input_tokens", 0)
-        cache_write  = getattr(usage, "cache_creation_input_tokens", 0)
+        usage            = response.usage
+        input_tokens     = usage.input_tokens
+        output_tokens    = usage.output_tokens
+        cache_read       = getattr(usage, "cache_read_input_tokens", 0)
+        cache_write      = getattr(usage, "cache_creation_input_tokens", 0)
+        total_tokens     = input_tokens + output_tokens
+        latency_ms       = (time.time() - start_time) * 1000
+        end_ns           = int(time.time() * 1e9)
 
         print(
-            f"[INFO] tokens: input={usage.input_tokens} output={usage.output_tokens} "
+            f"[INFO] tokens: input={input_tokens} output={output_tokens} "
             f"cache_read={cache_read} cache_write={cache_write} "
-            f"model={MODEL}"
+            f"latency_ms={latency_ms:.0f} model={MODEL} "
+            f"collector_available={collector_available} "
+            f"caller_id={caller_id} "
+            f"trace_id={trace_id}"
         )
 
-        # Increment daily counter (use total_tokens; cache reads are cheap
-        # but we still want to track them for the observability demo)
-        increment_token_count(total_tokens)
+        cumulative_daily_tokens = increment_token_count(total_tokens)
+
+        # ── OTel push (non-blocking, best-effort) ──────────────────────────
+        if collector_available:
+            msg_preview = user_message[:100] + "..." if len(user_message) > 100 else user_message
+            emit_otlp_trace(
+                trace_id, span_id, start_ns, end_ns,
+                status_code, input_tokens, output_tokens,
+                cache_read, total_tokens, user_message,
+                caller_id,
+            )
+            emit_otlp_metrics(
+                input_tokens, output_tokens, cache_read,
+                total_tokens, latency_ms, cumulative_daily_tokens,
+                caller_id,
+            )
+            emit_otlp_logs(
+                trace_id, span_id, end_ns,
+                input_tokens, output_tokens, cache_read,
+                total_tokens, latency_ms, status_code,
+                msg_preview, caller_id,
+            )
 
         return {
             "statusCode": 200,
@@ -251,25 +680,32 @@ def handler(event: dict, context) -> dict:
             "body": json.dumps({
                 "reply": reply_text,
                 "usage": {
-                    "input_tokens":  usage.input_tokens,
-                    "output_tokens": usage.output_tokens,
+                    "input_tokens":       input_tokens,
+                    "output_tokens":      output_tokens,
                     "cache_read_tokens":  cache_read,
                     "cache_write_tokens": cache_write,
-                    "total_tokens": total_tokens,
+                    "total_tokens":       total_tokens,
                 },
-                "model": MODEL,
-                "tokens_remaining_today": max(0, DAILY_TOKEN_CAP - tokens_today - total_tokens),
+                "model":   MODEL,
+                "trace_id": trace_id,   # expose for UI to show "view trace" link
+                "tokens_remaining_today": max(
+                    0, DAILY_TOKEN_CAP - tokens_today - total_tokens
+                ),
+                "instrumented": collector_available,
             }),
         }
 
     except anthropic.APIStatusError as e:
+        status_code = 502
         print(f"[ERROR] Anthropic API error: {e.status_code} {e.message}")
-        return error_response(502, "Upstream AI service error — please try again shortly")
+        return error_response(502, "Upstream AI service error — please try again")
 
     except anthropic.APIConnectionError as e:
+        status_code = 502
         print(f"[ERROR] Anthropic connection error: {e}")
-        return error_response(502, "Could not reach AI service — please try again shortly")
+        return error_response(502, "Could not reach AI service — please try again")
 
     except Exception as e:
+        status_code = 500
         print(f"[ERROR] Unexpected error: {e}")
         return error_response(500, "Internal server error")

@@ -815,11 +815,19 @@ resource "null_resource" "demo_dashboard_pub" {
   }
 
   provisioner "local-exec" {
-    command     = "python3 '${path.module}/import_dashboard.py' '${var.grafana_url}' '${grafana_organization.public.org_id}' 'admin' '${var.ui_admin_password}' '${path.module}/dashboard.json'"
+    command     = "python3 '${path.module}/import_dashboard.py' '${var.grafana_url}' '${grafana_organization.public.org_id}' 'demo-pub' 'admin' '${var.ui_admin_password}' '${path.module}/dashboard.json'"
   }
 
   provisioner "local-exec" {
-    command     = "python3 '${path.module}/import_dashboard.py' '${var.grafana_url}' 'default' 'admin' '${var.ui_admin_password}' '${path.module}/dashboard.json'"
+    command     = "python3 '${path.module}/import_dashboard.py' '${var.grafana_url}' 'default' 'demo-pub' 'admin' '${var.ui_admin_password}' '${path.module}/dashboard.json'"
+  }
+
+  provisioner "local-exec" {
+    command     = "python3 '${path.module}/import_dashboard.py' '${var.grafana_url}' '${grafana_organization.public.org_id}' 'llmdemo-pub' 'admin' '${var.ui_admin_password}' '${path.module}/llm_dashboard.json'"
+  }
+
+  provisioner "local-exec" {
+    command     = "python3 '${path.module}/import_dashboard.py' '${var.grafana_url}' 'default' 'llmdemo-pub' 'admin' '${var.ui_admin_password}' '${path.module}/llm_dashboard.json'"
   }
 
   depends_on = [
