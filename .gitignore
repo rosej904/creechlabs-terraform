@@ -49,7 +49,7 @@ node_modules
 .eslintcache
 
 # Production Build Directories
-/dist
+dist
 /dist-ssr
 
 # Environment Variables
