@@ -28,12 +28,13 @@ resource "grafana_organization" "public" {
   provisioner "local-exec" {
     when        = destroy
     interpreter = ["bash", "-c"]
-    command     = "curl -s -X POST -u 'admin:${var.ui_admin_password}' '${var.grafana_url}/api/user/using/1' || true"
+    command     = "curl -s -X POST -u \"$GRAFANA_ADMIN_USER:$GRAFANA_ADMIN_PASSWORD\" \"$GRAFANA_URL/api/user/using/1\" || true"
+    environment = {
+      GRAFANA_ADMIN_USER     = var.grafana_admin_user
+      GRAFANA_ADMIN_PASSWORD = var.grafana_admin_password
+      GRAFANA_URL            = var.grafana_url
+    }
   }
-}
-
-resource "grafana_organization" "public" {
-  name = "Public"
 }
 
 # Provider alias scoped to org 2 for all resources below
