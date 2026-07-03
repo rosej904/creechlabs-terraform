@@ -38,7 +38,7 @@ export default function GrafanaChatPanel({ status }) {
         <div className="w-full flex-1 flex flex-col items-center justify-center gap-3 p-8 rounded-b-2xl">
           <i className="ti ti-moon text-3xl text-[var(--color-text-tertiary)]" aria-hidden="true" />
           <p className="text-sm text-[var(--color-text-secondary)] text-center max-w-xs">
-            Visit weekdays 8:30am–5:00pm ET to see the live LLM observability dashboard alongside this chat.
+            Visit weekdays 9am-5pm ET to see the live LLM observability dashboard alongside this chat.
           </p>
           <div className="mt-1 space-y-1 text-xs text-[var(--color-text-tertiary)] text-center">
             <p>LLM Observability · Real-time AI workload metering</p>
