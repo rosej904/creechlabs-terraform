@@ -27,6 +27,10 @@ phases:
       - echo "=== Destroying Grafana layer ==="
       - cd environments/portfolio/grafana
       - |
+        curl -s -X POST \
+          -u "admin:$TF_VAR_ui_admin_password" \
+          'https://grafana.creechlabs.dev/api/user/using/1' || true
+      - |
         terraform init -input=false \
           -backend-config="bucket=$TF_STATE_BUCKET" \
           -backend-config="key=environments/portfolio/grafana/terraform.tfstate" \
