@@ -534,7 +534,7 @@
       "kind": "Panel",
       "spec": {
         "id": 20,
-        "title": "New panel",
+        "title": "SLO: Success Rate 99%",
         "description": "",
         "links": [],
         "data": {
