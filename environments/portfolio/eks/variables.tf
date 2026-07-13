@@ -13,7 +13,7 @@ variable "project_name" {
 variable "kubernetes_version" {
   description = "EKS Kubernetes version"
   type        = string
-  default     = "1.33"
+  default     = "1.36"
 }
 
 variable "node_instance_type" {
