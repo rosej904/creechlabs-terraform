@@ -23,7 +23,7 @@ variable "github_repo_url" {
 variable "github_branch" {
   description = "Git branch CodeBuild will clone and run against"
   type        = string
-  default     = "chore/eks-update-136"
+  default     = "main"
 }
 
 variable "schedules_enabled" {
