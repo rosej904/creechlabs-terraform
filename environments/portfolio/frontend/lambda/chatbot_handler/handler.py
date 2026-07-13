@@ -116,7 +116,7 @@ Your display window has limited screen real estate. You MUST format responses to
 
 ## Infrastructure
 - All AWS Resources managed via Terraform (nothing is created manually).
-- AWS EKS (K8s 1.33) in us-east-1 | t3.medium nodes | scaled by Auto Scaling Group (min 2, max 4).
+- AWS EKS (K8s 1.36) in us-east-1 | t3.medium nodes | scaled by Auto Scaling Group (min 2, max 4).
 - Apps Managed via ArgoCD (App of Apps)
 - Cluster buildout includes AWS LBC to auto provision load balancers and external DNS to auto sync domain records.
 - FinOps Ephemeral Lifecycle: Cluster automatically builds at 8:30 AM ET and destroys at 5:00 PM ET on weekdays to save costs.

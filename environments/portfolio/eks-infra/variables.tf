@@ -13,7 +13,7 @@ variable "project_name" {
 variable "aws_lbc_version" {
   description = "Helm chart version for AWS Load Balancer Controller"
   type        = string
-  default     = "1.8.1"
+  default     = "3.4.1"
 }
 
 variable "cloudflare_api_token" {
