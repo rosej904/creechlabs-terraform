@@ -43,7 +43,7 @@ variable "stable_node_max_count" {
 variable "spot_node_instance_types" {
   description = "EC2 instance types for the Spot node pool (multiple similar types improve Spot allocation/availability)"
   type        = list(string)
-  default     = ["t3.medium", "t3a.medium", "t3.small"]
+  default     = ["t3.medium", "t3a.medium"]
 }
 
 variable "spot_node_desired_count" {
