@@ -37,7 +37,7 @@ variable "github_repo_ssh_url" {
 variable "github_branch" {
   description = "Github branch name"
   type        = string
-  default     = "main"
+  default     = "chore/optimize-infra-cost"
 }
 
 variable "argocd_repo_ssh_private_key" {
