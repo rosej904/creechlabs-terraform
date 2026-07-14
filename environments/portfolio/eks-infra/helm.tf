@@ -173,6 +173,15 @@ resource "helm_release" "cluster_autoscaler" {
     name  = "extraArgs.scale-down-unneeded-time"
     value = "2m"
   }
+  
+  # Prevent CA from trying to balance scale-up events across the
+  # on-demand and Spot pools — they're intentionally distinct
+  # (stable vs. cost-optimized), not interchangeable capacity.
+  set {
+    name  = "extraArgs.balance-similar-node-groups"
+    value = "false"
+  }
+
 
   wait    = true
   timeout = 300
