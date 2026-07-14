@@ -304,30 +304,79 @@ resource "aws_iam_openid_connect_provider" "eks" {
 }
 
 # ------------------------------------------------------------
-# Managed Node Group — 3x t3.medium, private subnets
+# Managed Node Group — On-Demand "stable" pool
 # ------------------------------------------------------------
-resource "aws_eks_node_group" "main" {
+resource "aws_eks_node_group" "stable" {
   cluster_name    = aws_eks_cluster.main.name
-  node_group_name = "${var.project_name}-nodes"
+  node_group_name = "${var.project_name}-stable-ondemand"
   node_role_arn   = aws_iam_role.eks_nodes.arn
   subnet_ids      = local.private_subnet_ids
 
-  instance_types = [var.node_instance_type]
-  capacity_type  = var.use_spot_instances ? "SPOT" : "ON_DEMAND"
+  instance_types = [var.stable_node_instance_type]
+  capacity_type  = "ON_DEMAND"
 
   scaling_config {
-    desired_size = var.node_desired_count
-    min_size     = var.node_min_count
-    max_size     = var.node_max_count
+    desired_size = var.stable_node_desired_count
+    min_size     = var.stable_node_min_count
+    max_size     = var.stable_node_max_count
   }
 
   update_config {
     max_unavailable = 1
   }
 
-  # Use latest EKS-optimized AL2 AMI
-  ami_type       = "AL2023_x86_64_STANDARD"
-  disk_size      = 20  # GB — keep small to save cost
+  labels = {
+    "node-lifecycle" = "on-demand"
+  }
+
+  ami_type  = "AL2023_x86_64_STANDARD"
+  disk_size = 20 # GB — keep small to save cost
+
+  depends_on = [
+    aws_iam_role_policy_attachment.eks_worker_node_policy,
+    aws_iam_role_policy_attachment.eks_cni_policy,
+    aws_iam_role_policy_attachment.eks_ecr_readonly,
+    aws_eks_addon.vpc_cni, # ensure prefix delegation is configured before nodes bootstrap
+  ]
+
+  tags = merge(local.common_tags, {
+    "k8s.io/cluster-autoscaler/enabled"                     = "true"
+    "k8s.io/cluster-autoscaler/${var.project_name}-cluster" = "owned"
+  })
+
+  lifecycle {
+    ignore_changes = [scaling_config[0].desired_size]
+  }
+}
+
+# ------------------------------------------------------------
+# Managed Node Group — Spot "general" pool
+# ------------------------------------------------------------
+resource "aws_eks_node_group" "spot" {
+  cluster_name    = aws_eks_cluster.main.name
+  node_group_name = "${var.project_name}-spot-general"
+  node_role_arn   = aws_iam_role.eks_nodes.arn
+  subnet_ids      = local.private_subnet_ids
+
+  instance_types = var.spot_node_instance_types
+  capacity_type  = "SPOT"
+
+  scaling_config {
+    desired_size = var.spot_node_desired_count
+    min_size     = var.spot_node_min_count
+    max_size     = var.spot_node_max_count
+  }
+
+  update_config {
+    max_unavailable = 1
+  }
+
+  labels = {
+    "node-lifecycle" = "spot"
+  }
+
+  ami_type  = "AL2023_x86_64_STANDARD"
+  disk_size = 20 # GB — keep small to save cost
 
   depends_on = [
     aws_iam_role_policy_attachment.eks_worker_node_policy,
@@ -341,7 +390,6 @@ resource "aws_eks_node_group" "main" {
     "k8s.io/cluster-autoscaler/${var.project_name}-cluster" = "owned"
   })
 
-  # Allow nodes to be replaced on update
   lifecycle {
     ignore_changes = [scaling_config[0].desired_size]
   }
@@ -357,7 +405,7 @@ resource "aws_eks_addon" "coredns" {
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
 
-  depends_on = [aws_eks_node_group.main]
+  depends_on = [aws_eks_node_group.stable, aws_eks_node_group.spot]
   tags       = local.common_tags
 }
 
@@ -395,7 +443,7 @@ resource "aws_eks_addon" "ebs_csi_driver" {
   # Use node role for EBS CSI (simpler than IRSA for now)
   service_account_role_arn = aws_iam_role.ebs_csi_irsa.arn
 
-  depends_on = [aws_eks_node_group.main]
+  depends_on = [aws_eks_node_group.stable, aws_eks_node_group.spot]
   tags       = local.common_tags
 }
 
