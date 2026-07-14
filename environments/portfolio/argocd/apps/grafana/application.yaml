@@ -17,17 +17,17 @@ spec:
 
     # Base Core Values Reference
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: main
+      targetRevision: chore/optimize-infra-cost
       ref: baseValues
 
     # DataSources Values Reference
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: main
+      targetRevision: chore/optimize-infra-cost
       ref: dsValues
 
     # Alerting Values Reference
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: main
+      targetRevision: chore/optimize-infra-cost
       ref: alertValues
 
   destination:

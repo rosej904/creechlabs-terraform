@@ -16,34 +16,52 @@ variable "kubernetes_version" {
   default     = "1.36"
 }
 
-variable "node_instance_type" {
-  description = "EC2 instance type for EKS nodes"
+variable "stable_node_instance_type" {
+  description = "EC2 instance type for the on-demand stable node pool (runs stateful/critical workloads e.g. Grafana)"
   type        = string
-  default     = "t3.large"
+  default     = "t3.medium"
 }
 
-variable "node_desired_count" {
-  description = "Desired number of nodes"
+variable "stable_node_desired_count" {
+  description = "Desired number of nodes in the on-demand stable pool"
+  type        = number
+  default     = 1
+}
+
+variable "stable_node_min_count" {
+  description = "Minimum number of nodes in the on-demand stable pool"
+  type        = number
+  default     = 1
+}
+
+variable "stable_node_max_count" {
+  description = "Maximum number of nodes in the on-demand stable pool"
+  type        = number
+  default     = 1
+}
+
+variable "spot_node_instance_types" {
+  description = "EC2 instance types for the Spot node pool (multiple similar types improve Spot allocation/availability)"
+  type        = list(string)
+  default     = ["t3.medium", "t3a.medium"]
+}
+
+variable "spot_node_desired_count" {
+  description = "Desired number of nodes in the Spot pool"
+  type        = number
+  default     = 1
+}
+
+variable "spot_node_min_count" {
+  description = "Minimum number of nodes in the Spot pool"
+  type        = number
+  default     = 1
+}
+
+variable "spot_node_max_count" {
+  description = "Maximum number of nodes in the Spot pool"
   type        = number
   default     = 3
-}
-
-variable "node_min_count" {
-  description = "Minimum number of nodes"
-  type        = number
-  default     = 2
-}
-
-variable "node_max_count" {
-  description = "Maximum number of nodes"
-  type        = number
-  default     = 4
-}
-
-variable "use_spot_instances" {
-  description = "Use spot instances for cost savings (not recommended for production)"
-  type        = bool
-  default     = false
 }
 
 variable "eks_admin_users" {

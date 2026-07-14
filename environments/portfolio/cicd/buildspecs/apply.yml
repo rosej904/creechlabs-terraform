@@ -109,11 +109,13 @@ phases:
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://grafana.creechlabs.dev/api/health)
           if [ "$STATUS" = "200" ]; then
             echo "Grafana healthy"
-            break
+            exit 0
           fi
           echo "Attempt $i: HTTP $STATUS, waiting 15s..."
           sleep 15
         done
+        echo "ERROR: Grafana never became reachable after 30 attempts"
+        exit 1
 
       # ----------------------------------------------------------
       # Layer 5 — Grafana (org 2 provisioning)
