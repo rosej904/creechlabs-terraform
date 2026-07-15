@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana-mcp
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://grafana-community.github.io/helm-charts
+      chart: grafana-mcp
+      targetRevision: 0.18.1
+      helm:
+        valueFiles:
+          - '$values/environments/portfolio/argocd/apps/grafana-mcp/values.yaml'
+
+    # Values Reference
+    - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
+      targetRevision: feat/grafana-mcp-server
+      ref: values
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: observability
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
