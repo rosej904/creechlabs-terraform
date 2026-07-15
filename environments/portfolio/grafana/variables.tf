@@ -27,3 +27,9 @@ variable "tempo_url" {
   type        = string
   default     = "http://tempo.observability.svc.cluster.local:3200"
 }
+
+variable "cluster_name" {
+  description = "EKS cluster name"
+  type        = string
+  default     = "cl-portfolio-cluster"
+}

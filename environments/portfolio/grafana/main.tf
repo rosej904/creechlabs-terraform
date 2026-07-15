@@ -8,8 +8,12 @@ terraform {
       source  = "hashicorp/null"
       version = "~> 3.0"
     }
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.0"
+    }
   }
-
+  
   backend "s3" {}
 }
 
@@ -32,6 +36,20 @@ provider "grafana" {
   url    = var.grafana_url
   auth   = "admin:${var.ui_admin_password}"
   org_id = grafana_organization.public.org_id
+}
+
+data "aws_eks_cluster" "main" {
+  name = var.cluster_name
+}
+
+data "aws_eks_cluster_auth" "main" {
+  name = var.cluster_name
+}
+
+provider "kubernetes" {
+  host                   = data.aws_eks_cluster.main.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.main.certificate_authority[0].data)
+  token                  = data.aws_eks_cluster_auth.main.token
 }
 
 # ============================================================
@@ -838,4 +856,35 @@ resource "null_resource" "demo_dashboard_pub" {
     grafana_folder.resource_alerts_pub,
     grafana_folder.policy_alerts_pub,
   ]
+}
+
+
+# ============================================================
+# Grafana MCP Server — Service Account + Kubernetes Secret
+# Token written to k8s secret so MCP server pod can mount it
+# Recreated fresh each morning since persistence is disabled
+# ============================================================
+
+resource "grafana_service_account" "mcp_server" {
+  name   = "mcp-server"
+  role   = "Viewer"
+  org_id = 1
+}
+
+resource "grafana_service_account_token" "mcp_server" {
+  name               = "mcp-server-token"
+  service_account_id = grafana_service_account.mcp_server.id
+}
+
+resource "kubernetes_secret" "grafana_mcp_token" {
+  metadata {
+    name      = "grafana-mcp-token"
+    namespace = "observability"
+  }
+
+  data = {
+    token = grafana_service_account_token.mcp_server.key
+  }
+
+  type = "Opaque"
 }
