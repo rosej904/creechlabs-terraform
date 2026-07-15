@@ -117,5 +117,5 @@ variable "frontend_caller_key" {
 variable "mcp_endpoint" {
   description = "Grafana MCP endpoint, ephemeral part of daily build/destroy cycle"
   type        = string
-  default     = "https://mcp.creechlabs.dev/mcp"
+  default     = "https://mcp.creechlabs.dev"
 }
