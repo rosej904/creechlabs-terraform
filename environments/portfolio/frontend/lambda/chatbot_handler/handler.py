@@ -179,7 +179,8 @@ def build_mcp_tools() -> list:
                 "properties": {
                     "datasource_uid": {
                         "type": "string",
-                        "description": "Prometheus datasource UID — always use 'prometheus'"
+                        "description": "Prometheus datasource UID — always use 'prometheus'",
+                        "enum": ["prometheus"]
                     },
                     "expr": {
                         "type": "string",
@@ -239,7 +240,8 @@ def build_mcp_tools() -> list:
                 "properties": {
                     "datasource_uid": {
                         "type": "string",
-                        "description": "Loki datasource UID — always use 'loki'"
+                        "description": "Loki datasource UID — always use 'loki'",
+                        "enum": ["loki"]
                     },
                     "query": {
                         "type": "string",
@@ -922,3 +924,17 @@ def handler(event: dict, context) -> dict:
         status_code = 500
         print(f"[ERROR] Unexpected error: {e}")
         return error_response(500, "Internal server error")
+
+
+def check_collector_health() -> bool:
+    try:
+        resp = requests.get(
+            f"{OTEL_ENDPOINT}/",
+            timeout=1.5,
+            headers={"X-Health-Check": "true"},
+        )
+        print(f"[INFO] Collector health check: {resp.status_code}")
+        return resp.status_code < 500
+    except Exception as e:
+        print(f"[INFO] Collector health check failed: {e}")
+        return False
