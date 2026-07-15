@@ -5,6 +5,9 @@ grafana:
     name: "grafana-mcp-token"
     key: "token"
 
+extraArgs:
+  - "--allowed-hosts=mcp.creechlabs.dev"
+
 disableWrite: false
 
 ingress:
