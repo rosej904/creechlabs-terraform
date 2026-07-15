@@ -172,50 +172,67 @@ def build_mcp_tools() -> list:
             "description": (
                 "Execute a PromQL query against the live Prometheus datasource. "
                 "Use for current metric values: error rates, latency percentiles, "
-                "burn rates, node CPU/memory/disk, request rates, pod status."
+                "burn rates, node CPU/memory/disk, request rates, pod status. "
+                "Good recording rules to use: service:burnrate5m, service:requests:rate5m, "
+                "service:latency_p95:5m. Use queryType='instant' and endTime='now' for current values."
             ),
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "datasource_uid": {
+                    "datasourceUid": {
                         "type": "string",
-                        "description": "Prometheus datasource UID — always use 'prometheus'",
-                        "enum": ["prometheus"]
+                        "enum": ["prometheus"],
+                        "description": "Always use the literal string 'prometheus'"
                     },
                     "expr": {
                         "type": "string",
-                        "description": "PromQL expression e.g. service:burnrate5m{service='checkout'}"
+                        "description": "PromQL expression e.g. service:burnrate5m or sum(rate(traces_spanmetrics_calls_total{status_code='STATUS_CODE_ERROR'}[5m]))"
                     },
-                    "query_type": {
+                    "queryType": {
                         "type": "string",
                         "enum": ["instant", "range"],
-                        "description": "Use 'instant' for current point-in-time values"
+                        "description": "Use 'instant' for current values"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "description": "End time — always use 'now' for current values"
                     }
                 },
-                "required": ["datasource_uid", "expr"]
+                "required": ["datasourceUid", "expr", "endTime"]
             }
         },
         {
-            "name": "list_alert_rules",
+            "name": "alerting_manage_rules",
             "description": (
-                "List Grafana alert rules and their current firing state. "
-                "Use when asked about alerts, incidents, system health, or SLO breaches."
+                "List and inspect Grafana alert rules and their current firing state. "
+                "Use when asked about alerts, incidents, system health, or SLO breaches. "
+                "Always use operation='list'. Use states=['firing'] to see only active alerts."
             ),
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "state": {
+                    "operation": {
                         "type": "string",
-                        "enum": ["firing", "pending", "normal", "error"],
-                        "description": "Filter by alert state — omit to return all states"
+                        "enum": ["list"],
+                        "description": "Always use 'list' to retrieve alert rules"
+                    },
+                    "states": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Filter by state: firing, pending, normal, recovering, nodata, error"
+                    },
+                    "limit_alerts": {
+                        "type": "integer",
+                        "description": "Max alert instances per rule — use 5 to keep response concise"
                     }
-                }
+                },
+                "required": ["operation"]
             }
         },
         {
             "name": "search_dashboards",
             "description": (
-                "Search for Grafana dashboards by name or tag. "
+                "Search for Grafana dashboards by name. "
                 "Use when asked about available dashboards or to find a specific one."
             ),
             "input_schema": {
@@ -224,13 +241,16 @@ def build_mcp_tools() -> list:
                     "query": {
                         "type": "string",
                         "description": "Search query e.g. 'Demo' or 'SRE'"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max results to return"
                     }
-                },
-                "required": ["query"]
+                }
             }
         },
         {
-            "name": "query_loki",
+            "name": "query_loki_logs",
             "description": (
                 "Query Loki for recent logs from a specific service. "
                 "Use when asked about errors, recent log output, or service activity."
@@ -238,21 +258,29 @@ def build_mcp_tools() -> list:
             "input_schema": {
                 "type": "object",
                 "properties": {
-                    "datasource_uid": {
+                    "datasourceUid": {
                         "type": "string",
-                        "description": "Loki datasource UID — always use 'loki'",
-                        "enum": ["loki"]
+                        "enum": ["loki"],
+                        "description": "Always use the literal string 'loki'"
                     },
-                    "query": {
+                    "logql": {
                         "type": "string",
                         "description": "LogQL query e.g. {k8s_deployment_name='checkout'} | json"
                     },
-                    "since": {
+                    "startRfc3339": {
                         "type": "string",
-                        "description": "Lookback duration e.g. '5m', '1h'. Default '5m'"
+                        "description": "Start time e.g. 'now-5m' or 'now-1h'"
+                    },
+                    "endRfc3339": {
+                        "type": "string",
+                        "description": "End time — use 'now'"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max log lines to return — use 20 for brevity"
                     }
                 },
-                "required": ["datasource_uid", "query"]
+                "required": ["datasourceUid", "logql"]
             }
         }
     ]
@@ -308,7 +336,7 @@ Your display window has limited screen real estate. You MUST format responses to
 ## Live Data Capability
 - You can query live Grafana metrics, alerts, logs, and dashboards using built-in tools when the cluster is online (weekdays ~8:30 AM–5 PM ET).
 - Use these tools proactively when users ask about current system state, error rates, alerts, or service health.
-- If a tool call fails or returns no data, note the cluster may be offline and direct to grafana.creechlabs.dev.
+- If a tool returns an error, report the specific error — do not assume the cluster is offline. The cluster status is determined by whether tools are available, not by whether a specific query succeeds.
 
 ## Behavioral Rules
 - Keep responses short, direct, and architecture-focused.
