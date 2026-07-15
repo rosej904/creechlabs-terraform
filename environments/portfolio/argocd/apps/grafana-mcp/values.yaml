@@ -34,6 +34,3 @@ resources:
   limits:
     cpu: 200m
     memory: 128Mi
-
-nodeSelector:
-  node-lifecycle: on-demand
