@@ -113,3 +113,9 @@ variable "frontend_caller_key" {
   description = "Static token sent by the React frontend to identify itself as cl-portfolio-frontend in LLM telemetry. Matches VITE_CALLER_KEY in the frontend build. Not a secret/Not auth — stored as a Lambda env var."
   type        = string
 }
+
+variable "mcp_endpoint" {
+  description = "Grafana MCP endpoint, ephemeral part of daily build/destroy cycle"
+  type        = string
+  default     = "https://mcp.creechlabs.dev/mcp"
+}

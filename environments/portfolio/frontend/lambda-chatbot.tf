@@ -126,6 +126,7 @@ resource "aws_lambda_function" "chat" {
       CLAUDE_MODEL         = var.claude_model
       OTEL_ENDPOINT        = "https://otel.creechlabs.dev"
       FRONTEND_CALLER_KEY  = var.frontend_caller_key
+      MCP_ENDPOINT         = var.mcp_endpoint
     }
   }
 
