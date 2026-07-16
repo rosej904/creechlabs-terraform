@@ -94,67 +94,82 @@ def call_mcp_tool(tool_name: str, tool_input: dict) -> str:
     """
     Call a Grafana MCP tool via streamable-http transport.
     Each call initializes a fresh session — stateless, fits Lambda model.
+    Retries up to 3 times on DNS/connection errors (common on Lambda cold starts).
     Returns tool result as a string for Claude to consume.
     """
     if not MCP_ENDPOINT:
         return "MCP server not configured"
-    try:
-        # Step 1: Initialize session, get session ID from response headers
-        init_resp = requests.post(
-            f"{MCP_ENDPOINT}/mcp",
-            json={
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "initialize",
-                "params": {
-                    "protocolVersion": "2024-11-05",
-                    "capabilities": {},
-                    "clientInfo": {"name": SERVICE_NAME, "version": SERVICE_VERSION}
-                }
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Accept": "application/json, text/event-stream"
-            },
-            timeout=5.0
-        )
-        session_id = init_resp.headers.get("mcp-session-id", "")
 
-        # Step 2: Call the tool with the session ID
-        tool_resp = requests.post(
-            f"{MCP_ENDPOINT}/mcp",
-            json={
-                "jsonrpc": "2.0",
-                "id": 2,
-                "method": "tools/call",
-                "params": {"name": tool_name, "arguments": tool_input}
-            },
-            headers={
-                "Content-Type": "application/json",
-                "Accept": "application/json, text/event-stream",
-                "mcp-session-id": session_id
-            },
-            timeout=10.0
-        )
-        result = tool_resp.json()
+    last_error = None
+    for attempt in range(3):
+        try:
+            # Step 1: Initialize session, get session ID from response headers
+            init_resp = requests.post(
+                f"{MCP_ENDPOINT}/mcp",
+                json={
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {
+                        "protocolVersion": "2024-11-05",
+                        "capabilities": {},
+                        "clientInfo": {"name": SERVICE_NAME, "version": SERVICE_VERSION}
+                    }
+                },
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/event-stream"
+                },
+                timeout=5.0
+            )
+            session_id = init_resp.headers.get("mcp-session-id", "")
 
-        # Extract text content from MCP response
-        content = result.get("result", {}).get("content", [])
-        if content:
-            return "\n".join(c.get("text", "") for c in content if c.get("type") == "text")
+            # Step 2: Call the tool with the session ID
+            tool_resp = requests.post(
+                f"{MCP_ENDPOINT}/mcp",
+                json={
+                    "jsonrpc": "2.0",
+                    "id": 2,
+                    "method": "tools/call",
+                    "params": {"name": tool_name, "arguments": tool_input}
+                },
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/event-stream",
+                    "mcp-session-id": session_id
+                },
+                timeout=10.0
+            )
+            result = tool_resp.json()
 
-        # Surface any error from the MCP server
-        if "error" in result:
-            return f"Tool error: {result['error'].get('message', 'unknown error')}"
+            # Extract text content from MCP response
+            content = result.get("result", {}).get("content", [])
+            if content:
+                return "\n".join(c.get("text", "") for c in content if c.get("type") == "text")
 
-        return "No result returned from tool"
+            # Surface any error from the MCP server
+            if "error" in result:
+                return f"Tool error: {result['error'].get('message', 'unknown error')}"
 
-    except requests.Timeout:
-        print(f"[WARN] MCP tool call timed out: {tool_name}")
-        return "Tool call timed out — Grafana may be slow or offline"
-    except Exception as e:
-        print(f"[WARN] MCP tool call failed: {tool_name} error={e}")
-        return f"Tool call failed: {e}"
+            return "No result returned from tool"
+
+        except requests.exceptions.ConnectionError as e:
+            last_error = e
+            print(f"[WARN] MCP connection error attempt {attempt + 1}/3 ({tool_name}): {e}")
+            if attempt < 2:
+                time.sleep(attempt + 1)  # 1s then 2s backoff
+            continue
+
+        except requests.Timeout:
+            print(f"[WARN] MCP tool call timed out: {tool_name}")
+            return "Tool call timed out — Grafana may be slow or offline"
+
+        except Exception as e:
+            print(f"[WARN] MCP tool call failed: {tool_name} error={e}")
+            return f"Tool call failed: {e}"
+
+    print(f"[WARN] MCP tool call failed after 3 attempts ({tool_name}): {last_error}")
+    return "Tool temporarily unavailable — please try again"
 
 
 # ---------------------------------------------------------------------------
