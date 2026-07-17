@@ -7,6 +7,8 @@ cl-portfolio-chat Lambda handler
 - Caller identity: single static frontend key, env-var based (no IdP needed
   since this Lambda has exactly one caller — the portfolio frontend widget.
   Future agent/service callers will route through LiteLLM proxy, not here.)
+- MCP tool-use loop: Grafana MCP server for live metrics/alerts/dashboards
+  Tools only offered when cluster is online (collector_available=True)
 """
 
 import json
@@ -30,8 +32,10 @@ MODEL               = os.environ.get("CLAUDE_MODEL", "claude-haiku-4-5")
 OTEL_ENDPOINT       = os.environ.get("OTEL_ENDPOINT", "https://otel.creechlabs.dev")
 OTEL_SECRET_ARN     = os.environ.get("OTEL_SECRET_ARN", "")
 FRONTEND_CALLER_KEY = os.environ.get("FRONTEND_CALLER_KEY", "")
+MCP_ENDPOINT        = os.environ.get("MCP_ENDPOINT", "")
 SERVICE_NAME        = "cl-portfolio-chat"
 SERVICE_VERSION     = "1.0.0"
+MAX_TOOL_ROUNDS     = 3
 
 # ---------------------------------------------------------------------------
 # AWS clients (module-level = reused across warm invocations)
@@ -84,7 +88,221 @@ def get_caller_id(event: dict) -> str:
 
 
 # ---------------------------------------------------------------------------
-# System prompt  (Hard-constrained for tight screen real estate)
+# MCP tool executor
+# ---------------------------------------------------------------------------
+def call_mcp_tool(tool_name: str, tool_input: dict) -> str:
+    """
+    Call a Grafana MCP tool via streamable-http transport.
+    Each call initializes a fresh session — stateless, fits Lambda model.
+    Retries up to 3 times on DNS/connection errors (common on Lambda cold starts).
+    Returns tool result as a string for Claude to consume.
+    """
+    if not MCP_ENDPOINT:
+        return "MCP server not configured"
+
+    last_error = None
+    for attempt in range(3):
+        try:
+            # Step 1: Initialize session, get session ID from response headers
+            init_resp = requests.post(
+                f"{MCP_ENDPOINT}/mcp",
+                json={
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "initialize",
+                    "params": {
+                        "protocolVersion": "2024-11-05",
+                        "capabilities": {},
+                        "clientInfo": {"name": SERVICE_NAME, "version": SERVICE_VERSION}
+                    }
+                },
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/event-stream"
+                },
+                timeout=5.0
+            )
+            session_id = init_resp.headers.get("mcp-session-id", "")
+
+            # Step 2: Call the tool with the session ID
+            tool_resp = requests.post(
+                f"{MCP_ENDPOINT}/mcp",
+                json={
+                    "jsonrpc": "2.0",
+                    "id": 2,
+                    "method": "tools/call",
+                    "params": {"name": tool_name, "arguments": tool_input}
+                },
+                headers={
+                    "Content-Type": "application/json",
+                    "Accept": "application/json, text/event-stream",
+                    "mcp-session-id": session_id
+                },
+                timeout=10.0
+            )
+            result = tool_resp.json()
+
+            # Extract text content from MCP response
+            content = result.get("result", {}).get("content", [])
+            if content:
+                return "\n".join(c.get("text", "") for c in content if c.get("type") == "text")
+
+            # Surface any error from the MCP server
+            if "error" in result:
+                return f"Tool error: {result['error'].get('message', 'unknown error')}"
+
+            return "No result returned from tool"
+
+        except requests.exceptions.ConnectionError as e:
+            last_error = e
+            print(f"[WARN] MCP connection error attempt {attempt + 1}/3 ({tool_name}): {e}")
+            if attempt < 2:
+                time.sleep(attempt + 1)  # 1s then 2s backoff
+            continue
+
+        except requests.Timeout:
+            print(f"[WARN] MCP tool call timed out: {tool_name}")
+            return "Tool call timed out — Grafana may be slow or offline"
+
+        except Exception as e:
+            print(f"[WARN] MCP tool call failed: {tool_name} error={e}")
+            return f"Tool call failed: {e}"
+
+    print(f"[WARN] MCP tool call failed after 3 attempts ({tool_name}): {last_error}")
+    return "Tool temporarily unavailable — please try again"
+
+
+# ---------------------------------------------------------------------------
+# MCP tool definitions (what Claude sees — controls what Anri can query)
+# ---------------------------------------------------------------------------
+def build_mcp_tools() -> list:
+    """
+    Hardcoded tool schema passed to Claude with each request.
+    Claude decides when to use these based on user intent.
+    Only offered when cluster is online (caller checks collector_available).
+    """
+    return [
+        {
+            "name": "query_prometheus",
+            "description": (
+                "Execute a PromQL query against the live Prometheus datasource. "
+                "Use for current metric values: error rates, latency percentiles, "
+                "burn rates, node CPU/memory/disk, request rates, pod status. "
+                "Good recording rules to use: service:burnrate5m, service:requests:rate5m, "
+                "service:latency_p95:5m. Use queryType='instant' and endTime='now' for current values."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "datasourceUid": {
+                        "type": "string",
+                        "enum": ["prometheus"],
+                        "description": "Always use the literal string 'prometheus'"
+                    },
+                    "expr": {
+                        "type": "string",
+                        "description": "PromQL expression e.g. service:burnrate5m or sum(rate(traces_spanmetrics_calls_total{status_code='STATUS_CODE_ERROR'}[5m]))"
+                    },
+                    "queryType": {
+                        "type": "string",
+                        "enum": ["instant", "range"],
+                        "description": "Use 'instant' for current values"
+                    },
+                    "endTime": {
+                        "type": "string",
+                        "description": "End time — always use 'now' for current values"
+                    }
+                },
+                "required": ["datasourceUid", "expr", "endTime"]
+            }
+        },
+        {
+            "name": "alerting_manage_rules",
+            "description": (
+                "List and inspect Grafana alert rules and their current firing state. "
+                "Use when asked about alerts, incidents, system health, or SLO breaches. "
+                "Always use operation='list'. Use states=['firing'] to see only active alerts."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "operation": {
+                        "type": "string",
+                        "enum": ["list"],
+                        "description": "Always use 'list' to retrieve alert rules"
+                    },
+                    "states": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Filter by state: firing, pending, normal, recovering, nodata, error"
+                    },
+                    "limit_alerts": {
+                        "type": "integer",
+                        "description": "Max alert instances per rule — use 5 to keep response concise"
+                    }
+                },
+                "required": ["operation"]
+            }
+        },
+        {
+            "name": "search_dashboards",
+            "description": (
+                "Search for Grafana dashboards by name. "
+                "Use when asked about available dashboards or to find a specific one."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "query": {
+                        "type": "string",
+                        "description": "Search query e.g. 'Demo' or 'SRE'"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max results to return"
+                    }
+                }
+            }
+        },
+        {
+            "name": "query_loki_logs",
+            "description": (
+                "Query Loki for recent logs from a specific service. "
+                "Use when asked about errors, recent log output, or service activity."
+            ),
+            "input_schema": {
+                "type": "object",
+                "properties": {
+                    "datasourceUid": {
+                        "type": "string",
+                        "enum": ["loki"],
+                        "description": "Always use the literal string 'loki'"
+                    },
+                    "logql": {
+                        "type": "string",
+                        "description": "LogQL query e.g. {k8s_deployment_name='checkout'} | json"
+                    },
+                    "startRfc3339": {
+                        "type": "string",
+                        "description": "Start time e.g. 'now-5m' or 'now-1h'"
+                    },
+                    "endRfc3339": {
+                        "type": "string",
+                        "description": "End time — use 'now'"
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "Max log lines to return — use 20 for brevity"
+                    }
+                },
+                "required": ["datasourceUid", "logql"]
+            }
+        }
+    ]
+
+
+# ---------------------------------------------------------------------------
+# System prompt
 # ---------------------------------------------------------------------------
 SYSTEM_PROMPT = """You are Anri — a highly technical, ultra-concise chatbot assistant embedded in Jordan's SRE portfolio at creechlabs.dev.
 
@@ -130,13 +348,18 @@ Your display window has limited screen real estate. You MUST format responses to
 - SLO-As-A-Service: Microservices (checkout, cart, frontend, productcatalog) opt into Google-spec multi-window multi-burn-rate SLO alerting simply by applying a deployment label.
 - Self-Observability: This chatbot's token usage, latency, and tool calls are traced in this exact Grafana stack.
 
+## Live Data Capability
+- You can query live Grafana metrics, alerts, logs, and dashboards using built-in tools when the cluster is online (weekdays ~8:30 AM–5 PM ET).
+- Use these tools proactively when users ask about current system state, error rates, alerts, or service health.
+- If a tool returns an error, report the specific error — do not assume the cluster is offline. The cluster status is determined by whether tools are available, not by whether a specific query succeeds.
+- Empty tool results mean the specific query returned no data — not that the cluster is offline. Never conclude the cluster is offline based on an empty tool result. Only conclude the cluster is offline if tools are unavailable entirely.
+- When a PromQL query returns no data, try a simpler query or report that the specific metric isn't available rather than concluding the system is down.
+
 ## Behavioral Rules
 - Keep responses short, direct, and architecture-focused.
-- If asked about live cluster state/metrics, note that the cluster is offline outside 9:00 AM–5:00 PM ET weekdays. (The build starts at 8:30 AM and may take 15 minutes to complete.)
-- Do not hallucinate or guess infrastructure details.
-
-## Current Limitations
-- You cannot query live metrics, logs, or dashboards yet. If asked, say this capability is coming soon and direct them to grafana.creechlabs.dev directly.
+- If asked about live cluster state outside 8:30 AM–5:00 PM ET weekdays, note the cluster may still be coming up or already torn down.
+- Do not hallucinate or guess infrastructure details — use tools for live data.
+- When returning metric values, always include units and context (e.g. "checkout burn rate: 0.0x (healthy, SLO target 1.0x threshold)").
 """
 
 
@@ -145,12 +368,12 @@ Your display window has limited screen real estate. You MUST format responses to
 # ---------------------------------------------------------------------------
 def generate_trace_id() -> str:
     import secrets
-    return secrets.token_hex(16)  # 32-char hex = 128-bit trace ID
+    return secrets.token_hex(16)
 
 
 def generate_span_id() -> str:
     import secrets
-    return secrets.token_hex(8)   # 16-char hex = 64-bit span ID
+    return secrets.token_hex(8)
 
 
 def check_collector_health() -> bool:
@@ -178,10 +401,10 @@ def emit_otlp_trace(
     total_tokens: int,
     user_message: str,
     caller_id: str,
+    tool_calls_made: int = 0,
 ) -> None:
     """Push a single span to the OTel collector via OTLP/HTTP."""
 
-    # Truncate user message for span attribute (avoid storing full PII in traces)
     msg_preview = user_message[:100] + "..." if len(user_message) > 100 else user_message
 
     payload = {
@@ -204,14 +427,13 @@ def emit_otlp_trace(
                                 "traceId": trace_id,
                                 "spanId": span_id,
                                 "name": "gen_ai.chat",
-                                "kind": 2,  # SPAN_KIND_SERVER
+                                "kind": 2,
                                 "startTimeUnixNano": str(start_ns),
                                 "endTimeUnixNano": str(end_ns),
                                 "status": {
-                                    "code": 1 if status_code == 200 else 2  # OK or ERROR
+                                    "code": 1 if status_code == 200 else 2
                                 },
                                 "attributes": [
-                                    # gen_ai semantic conventions
                                     {"key": "gen_ai.system",
                                      "value": {"stringValue": "anthropic"}},
                                     {"key": "gen_ai.operation.name",
@@ -226,13 +448,14 @@ def emit_otlp_trace(
                                      "value": {"intValue": str(total_tokens)}},
                                     {"key": "gen_ai.usage.cache_read_tokens",
                                      "value": {"intValue": str(cache_read_tokens)}},
-                                    # request context
                                     {"key": "http.status_code",
                                      "value": {"intValue": str(status_code)}},
                                     {"key": "gen_ai.prompt.preview",
                                      "value": {"stringValue": msg_preview}},
                                     {"key": "gen_ai.caller.id",
                                      "value": {"stringValue": caller_id}},
+                                    {"key": "gen_ai.tool_calls",
+                                     "value": {"intValue": str(tool_calls_made)}},
                                 ],
                             }
                         ],
@@ -266,18 +489,14 @@ def emit_otlp_metrics(
     latency_ms: float,
     cumulative_daily_tokens: int | None,
     caller_id: str,
+    tool_calls_made: int = 0,
 ) -> None:
     """
     Push two metric shapes to the OTel collector:
     - Gauges: per-request snapshots (latency, this request's token counts).
-      Tagged with caller_id since these genuinely reflect this caller's request —
-      Grafana can `sum by (caller_id)` these for a per-service usage breakdown.
+      Tagged with caller_id since these genuinely reflect this caller's request.
     - Counter: cumulative daily total, sourced from DynamoDB so Prometheus and
-      the budget ledger never disagree. NOT tagged with caller_id — the DynamoDB
-      ledger tracks one combined daily total across all callers today, so tagging
-      it per-caller would misrepresent it as a per-caller total. If per-caller
-      cumulative budgets are needed later, the DynamoDB key needs to be split by
-      caller_id first (pk: budget:{date}:{caller_id}) — noted as a TODO.
+      the budget ledger never disagree. NOT tagged with caller_id.
     """
 
     now_ns = str(int(time.time() * 1e9))
@@ -317,13 +536,12 @@ def emit_otlp_metrics(
                         "asDouble": value,
                     }
                 ],
-                "aggregationTemporality": 2,  # AGGREGATION_TEMPORALITY_CUMULATIVE
+                "aggregationTemporality": 2,
                 "isMonotonic": True,
             },
         }
 
     metrics = [
-        # Per-request gauges — tagged with caller_id for per-caller breakdown
         gauge("gen_ai.usage.input_tokens",
               "Input tokens for this request",
               input_tokens, per_request_attrs),
@@ -339,12 +557,11 @@ def emit_otlp_metrics(
         gauge("gen_ai.request.latency_ms",
               "End-to-end chat request latency in ms",
               latency_ms, per_request_attrs),
+        gauge("gen_ai.tool_calls",
+              "Number of MCP tool calls made in this request",
+              tool_calls_made, per_request_attrs),
     ]
 
-    # Cumulative counter — only emit if we got a valid total back from DynamoDB.
-    # Sourced from the same ledger that enforces the budget cutoff, so this
-    # number and the budget check can never silently drift apart.
-    # Intentionally NOT tagged with caller_id — see docstring above.
     if cumulative_daily_tokens is not None:
         metrics.append(
             counter("gen_ai.usage.total_tokens_today",
@@ -391,7 +608,6 @@ def emit_otlp_metrics(
         print(f"[WARN] OTel metrics push failed (non-fatal): {e}")
 
 
-
 def emit_otlp_logs(
     trace_id: str,
     span_id: str,
@@ -404,6 +620,7 @@ def emit_otlp_logs(
     status_code: int,
     user_message_preview: str,
     caller_id: str,
+    tool_calls_made: int = 0,
 ) -> None:
     """Push a structured log record to the OTel collector -> Loki."""
 
@@ -428,7 +645,7 @@ def emit_otlp_logs(
                         "logRecords": [
                             {
                                 "timeUnixNano": str(timestamp_ns),
-                                "severityNumber": 9,    # INFO
+                                "severityNumber": 9,
                                 "severityText": "INFO",
                                 "traceId": trace_id,
                                 "spanId": span_id,
@@ -439,7 +656,8 @@ def emit_otlp_logs(
                                         f"input_tokens={input_tokens} "
                                         f"output_tokens={output_tokens} "
                                         f"latency_ms={latency_ms:.0f} "
-                                        f"status={status_code}"
+                                        f"status={status_code} "
+                                        f"tool_calls={tool_calls_made}"
                                     )
                                 },
                                 "attributes": [
@@ -463,6 +681,8 @@ def emit_otlp_logs(
                                      "value": {"intValue": str(status_code)}},
                                     {"key": "gen_ai.prompt.preview",
                                      "value": {"stringValue": user_message_preview}},
+                                    {"key": "gen_ai.tool_calls",
+                                     "value": {"intValue": str(tool_calls_made)}},
                                 ],
                             }
                         ],
@@ -492,7 +712,6 @@ def emit_otlp_logs(
 # Budget helpers
 # ---------------------------------------------------------------------------
 def today_key() -> str:
-    # Encode date into pk so no sort key is needed — matches table schema (pk only)
     date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     return f"budget:{date}"
 
@@ -585,7 +804,7 @@ def handler(event: dict, context) -> dict:
         if msg.get("role") not in ("user", "assistant") or not msg.get("content"):
             return error_response(400, "Each message must have role and content")
 
-    # ── Resolve caller identity ──────────────────────────────────────────────
+    # ── Resolve caller identity ────────────────────────────────────────────
     caller_id = get_caller_id(event)
 
     # ── Budget check ───────────────────────────────────────────────────────
@@ -597,13 +816,13 @@ def handler(event: dict, context) -> dict:
     # ── Check collector availability (non-blocking) ────────────────────────
     collector_available = check_collector_health()
     if not collector_available:
-        print("[INFO] OTel collector unreachable — instrumentation degraded")
+        print("[INFO] OTel collector unreachable — instrumentation degraded, MCP tools disabled")
 
-    # ── Trace/span IDs (generated regardless, used if collector is up) ─────
+    # ── Trace/span IDs ────────────────────────────────────────────────────
     trace_id = generate_trace_id()
     span_id  = generate_span_id()
 
-    # ── Build request ──────────────────────────────────────────────────────
+    # ── Build request ─────────────────────────────────────────────────────
     messages = trim_messages(messages)
     user_message = next(
         (m["content"] for m in reversed(messages) if m["role"] == "user"), ""
@@ -617,17 +836,56 @@ def handler(event: dict, context) -> dict:
         }
     ]
 
-    # ── Call Anthropic API ─────────────────────────────────────────────────
-    status_code = 200
+    # ── MCP tools — only when cluster is online ───────────────────────────
+    mcp_tools = build_mcp_tools() if (MCP_ENDPOINT and collector_available) else []
+
+    # ── Call Anthropic API (with MCP tool-use loop) ────────────────────────
+    status_code     = 200
+    tool_calls_made = 0
+
     try:
         client = anthropic.Anthropic(api_key=get_api_key())
 
-        response = client.messages.create(
+        create_kwargs = dict(
             model=MODEL,
             max_tokens=1024,
             system=system_with_cache,
             messages=messages,
         )
+        if mcp_tools:
+            create_kwargs["tools"] = mcp_tools
+
+        response = client.messages.create(**create_kwargs)
+
+        # ── Tool-use loop (max MAX_TOOL_ROUNDS to prevent runaway) ─────────
+        loop_messages = list(messages)
+
+        while response.stop_reason == "tool_use" and tool_calls_made < MAX_TOOL_ROUNDS:
+            tool_calls_made += 1
+            tool_results = []
+
+            for block in response.content:
+                if block.type == "tool_use":
+                    print(f"[INFO] MCP tool call #{tool_calls_made}: {block.name} input={block.input}")
+                    result_text = call_mcp_tool(block.name, block.input)
+                    print(f"[INFO] MCP tool result ({block.name}): {result_text[:200]}")
+                    tool_results.append({
+                        "type": "tool_result",
+                        "tool_use_id": block.id,
+                        "content": result_text
+                    })
+
+            # Append assistant turn + tool results, continue conversation
+            loop_messages.append({"role": "assistant", "content": response.content})
+            loop_messages.append({"role": "user", "content": tool_results})
+
+            response = client.messages.create(
+                model=MODEL,
+                max_tokens=1024,
+                system=system_with_cache,
+                messages=loop_messages,
+                tools=mcp_tools,
+            )
 
         reply_text = "".join(
             block.text for block in response.content if block.type == "text"
@@ -646,6 +904,7 @@ def handler(event: dict, context) -> dict:
             f"[INFO] tokens: input={input_tokens} output={output_tokens} "
             f"cache_read={cache_read} cache_write={cache_write} "
             f"latency_ms={latency_ms:.0f} model={MODEL} "
+            f"tool_calls={tool_calls_made} "
             f"collector_available={collector_available} "
             f"caller_id={caller_id} "
             f"trace_id={trace_id}"
@@ -653,25 +912,25 @@ def handler(event: dict, context) -> dict:
 
         cumulative_daily_tokens = increment_token_count(total_tokens)
 
-        # ── OTel push (non-blocking, best-effort) ──────────────────────────
+        # ── OTel push (non-blocking, best-effort) ─────────────────────────
         if collector_available:
             msg_preview = user_message[:100] + "..." if len(user_message) > 100 else user_message
             emit_otlp_trace(
                 trace_id, span_id, start_ns, end_ns,
                 status_code, input_tokens, output_tokens,
                 cache_read, total_tokens, user_message,
-                caller_id,
+                caller_id, tool_calls_made,
             )
             emit_otlp_metrics(
                 input_tokens, output_tokens, cache_read,
                 total_tokens, latency_ms, cumulative_daily_tokens,
-                caller_id,
+                caller_id, tool_calls_made,
             )
             emit_otlp_logs(
                 trace_id, span_id, end_ns,
                 input_tokens, output_tokens, cache_read,
                 total_tokens, latency_ms, status_code,
-                msg_preview, caller_id,
+                msg_preview, caller_id, tool_calls_made,
             )
 
         return {
@@ -686,8 +945,9 @@ def handler(event: dict, context) -> dict:
                     "cache_write_tokens": cache_write,
                     "total_tokens":       total_tokens,
                 },
-                "model":   MODEL,
-                "trace_id": trace_id,   # expose for UI to show "view trace" link
+                "model":      MODEL,
+                "trace_id":   trace_id,
+                "tool_calls": tool_calls_made,
                 "tokens_remaining_today": max(
                     0, DAILY_TOKEN_CAP - tokens_today - total_tokens
                 ),
@@ -709,3 +969,17 @@ def handler(event: dict, context) -> dict:
         status_code = 500
         print(f"[ERROR] Unexpected error: {e}")
         return error_response(500, "Internal server error")
+
+
+def check_collector_health() -> bool:
+    try:
+        resp = requests.get(
+            f"{OTEL_ENDPOINT}/",
+            timeout=1.5,
+            headers={"X-Health-Check": "true"},
+        )
+        print(f"[INFO] Collector health check: {resp.status_code}")
+        return resp.status_code < 500
+    except Exception as e:
+        print(f"[INFO] Collector health check failed: {e}")
+        return False
