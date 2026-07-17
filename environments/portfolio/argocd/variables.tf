@@ -37,7 +37,7 @@ variable "github_repo_ssh_url" {
 variable "github_branch" {
   description = "Github branch name"
   type        = string
-  default     = "chore/optimize-infra-cost"
+  default     = "feat/grafana-mcp-server"
 }
 
 variable "argocd_repo_ssh_private_key" {
