@@ -1,0 +1,27 @@
+# Python
+**/*.pyc
+**/__pycache__/
+.venv/
+venv/
+
+# Terraform
+.terraform/
+
+# Build/dependency artifacts
+**/build/
+**/lambda/**/build/
+node_modules/
+dist/
+dist-ssr/
+
+# Cursor's own cache
+.cursor/
+
+# Secrets - hard block from AI access (not just indexing)
+**/*.tfvars
+**/*.tfvars.json
+**/*backend.hcl
+*.pem
+*.key
+.env
+.env.*
