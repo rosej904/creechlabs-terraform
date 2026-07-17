@@ -33,10 +33,30 @@ data "terraform_remote_state" "networking" {
   }
 }
 
+# Looked up by tag rather than referencing networking's subnet_ids list by
+# index/position, since that list's ordering isn't guaranteed to be stable
+# across applies. Matches the "<project>-private-<az>" naming convention
+# used by the networking layer (e.g. "cl-portfolio-private-us-east-1a").
+data "aws_subnet" "node_group_az" {
+  vpc_id = local.vpc_id
+
+  filter {
+    name   = "tag:Name"
+    values = ["${var.project_name}-private-${var.node_group_availability_zone}"]
+  }
+}
+
 locals {
   vpc_id             = data.terraform_remote_state.networking.outputs.vpc_id
   private_subnet_ids = data.terraform_remote_state.networking.outputs.private_subnet_ids
   public_subnet_ids  = data.terraform_remote_state.networking.outputs.public_subnet_ids
+
+  # Single private subnet for node groups, pinned to the same AZ as the
+  # NAT Gateway. Keeps EBS-backed StatefulSets (Prometheus/Loki/Tempo)
+  # from ending up in an AZ with no running nodes, and avoids cross-AZ
+  # data transfer on node egress. Looked up dynamically since the VPC
+  # (and its subnet IDs) is fully recreated every night.
+  single_az_private_subnet_id = data.aws_subnet.node_group_az.id
 
   common_tags = {
     Project     = var.project_name
@@ -305,12 +325,14 @@ resource "aws_iam_openid_connect_provider" "eks" {
 
 # ------------------------------------------------------------
 # Managed Node Group — On-Demand "stable" pool
+# Small, fixed-size pool for stateful/critical workloads (e.g. Grafana)
+# that shouldn't be disrupted by Spot reclaims.
 # ------------------------------------------------------------
 resource "aws_eks_node_group" "stable" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "${var.project_name}-stable-ondemand"
   node_role_arn   = aws_iam_role.eks_nodes.arn
-  subnet_ids      = local.private_subnet_ids
+  subnet_ids      = [local.single_az_private_subnet_id]
 
   instance_types = [var.stable_node_instance_type]
   capacity_type  = "ON_DEMAND"
@@ -351,12 +373,15 @@ resource "aws_eks_node_group" "stable" {
 
 # ------------------------------------------------------------
 # Managed Node Group — Spot "general" pool
+# Bulk capacity for everything else. Untainted so it's the default
+# scheduling target for any workload with no explicit placement rule.
+# Multiple similar instance types improve Spot allocation/availability.
 # ------------------------------------------------------------
 resource "aws_eks_node_group" "spot" {
   cluster_name    = aws_eks_cluster.main.name
   node_group_name = "${var.project_name}-spot-general"
   node_role_arn   = aws_iam_role.eks_nodes.arn
-  subnet_ids      = local.private_subnet_ids
+  subnet_ids      = [local.single_az_private_subnet_id]
 
   instance_types = var.spot_node_instance_types
   capacity_type  = "SPOT"
@@ -382,7 +407,7 @@ resource "aws_eks_node_group" "spot" {
     aws_iam_role_policy_attachment.eks_worker_node_policy,
     aws_iam_role_policy_attachment.eks_cni_policy,
     aws_iam_role_policy_attachment.eks_ecr_readonly,
-    aws_eks_addon.vpc_cni,
+    aws_eks_addon.vpc_cni, # ensure prefix delegation is configured before nodes bootstrap
   ]
 
   tags = merge(local.common_tags, {
@@ -424,6 +449,11 @@ resource "aws_eks_addon" "vpc_cni" {
   resolve_conflicts_on_create = "OVERWRITE"
   resolve_conflicts_on_update = "OVERWRITE"
 
+  # Enable prefix delegation so managed node groups auto-calculate a much
+  # higher max-pods ceiling (t3.medium: 17 -> 110) instead of the default
+  # ENI/secondary-IP based limit. Must be applied before any node group
+  # is created so nodes bootstrap with the correct value from launch —
+  # see depends_on added to aws_eks_node_group.stable and .spot below.
   configuration_values = jsonencode({
     env = {
       ENABLE_PREFIX_DELEGATION = "true"

@@ -16,6 +16,12 @@ variable "kubernetes_version" {
   default     = "1.36"
 }
 
+variable "node_group_availability_zone" {
+  description = "Single AZ for both node groups (matches the NAT Gateway's AZ to avoid cross-AZ egress and EBS-volume/node AZ mismatches for StatefulSets)"
+  type        = string
+  default     = "us-east-1a"
+}
+
 variable "stable_node_instance_type" {
   description = "EC2 instance type for the on-demand stable node pool (runs stateful/critical workloads e.g. Grafana)"
   type        = string
