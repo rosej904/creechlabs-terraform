@@ -71,3 +71,6 @@ dist
 # buildfiles
 *.zip
 **/*.zip
+
+# Lambda build staging (vendored deps before zip)
+**/build/
