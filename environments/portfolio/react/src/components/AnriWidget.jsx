@@ -27,8 +27,8 @@ const SUGGESTIONS = [
   'Tell me about this portfolio?',
   'Why is your name Anri?',
   'What infrastructure is this built on?',
-  'Are there any active SLO burn alerts right now? (Coming Soon!)',
-  'What is the current error rate for the checkout service? (Coming Soon!)',
+  'Are there any active SLO burn alerts right now?',
+  'What is the current error rate for the checkout service?',
 ]
 
 // ─── Inline head for assistant replies ───────────────────────────────────────
@@ -256,9 +256,9 @@ export default function AnriWidget({ grafanaStatus, bubbleStyle }) {
               {/* Input */}
               <div className="shrink-0 p-3 border-t border-[var(--color-border)]">
                 <div className="flex gap-2 bg-[var(--color-bg)] border border-[var(--color-border)] rounded-xl px-3 py-2 focus-within:border-[var(--color-accent)] transition-colors">
-                  <textarea ref={inputRef} rows={1} value={input}
+                  <textarea ref={inputRef} rows={3} value={input}
                     onChange={(e) => setInput(e.target.value)} onKeyDown={handleKeyDown}
-                    placeholder="Ask about metrics, alerts, traces…"
+                    placeholder="Ask about live metrics, alerts, traces…"
                     className="flex-1 bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-tertiary)] resize-none outline-none leading-relaxed"
                     style={{ maxHeight: '96px' }} />
                   <button onClick={() => sendMessage(input)} disabled={!input.trim() || loading} aria-label="Send"

@@ -4,10 +4,6 @@ const ROADMAP_ITEMS = [
     detail: 'Pyroscope - continous profiling, Grafana Alloy - Grafana Labs otel distribution, OpenCost - Real time cost observability, Mimir - Prometheues backend storage',
   },
   {
-    title: 'MCP Server for Grafana',
-    detail: 'Add Grafana MCP server deployed in-cluster — ask natural language questions about live metrics, logs, traces, and alerts.',
-  },
-  {
     title: 'Chaos Engineering',
     detail: 'Trigger an infrastructure failure and its automated remediations to test the resilience of the system and its components',
   },
