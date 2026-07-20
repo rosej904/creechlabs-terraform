@@ -74,3 +74,4 @@ dist
 
 # Lambda build staging (vendored deps before zip)
 **/build/
+**/package/

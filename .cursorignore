@@ -10,6 +10,7 @@ venv/
 # Build/dependency artifacts
 **/build/
 **/lambda/**/build/
+**/package/
 node_modules/
 dist/
 dist-ssr/
