@@ -17,17 +17,17 @@ spec:
 
     # Base Core Values Reference
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: feat/grafana-mcp-server
+      targetRevision: bugfix/grafana-pc-scheduling
       ref: baseValues
 
     # DataSources Values Reference
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: feat/grafana-mcp-server
+      targetRevision: bugfix/grafana-pc-scheduling
       ref: dsValues
 
     # Alerting Values Reference
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: feat/grafana-mcp-server
+      targetRevision: bugfix/grafana-pc-scheduling
       ref: alertValues
 
   destination:
