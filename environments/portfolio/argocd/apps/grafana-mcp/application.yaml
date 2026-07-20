@@ -15,7 +15,7 @@ spec:
 
     # Values Reference
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: feat/grafana-mcp-server
+      targetRevision: main
       ref: values
 
   destination:
