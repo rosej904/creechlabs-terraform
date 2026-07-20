@@ -25,7 +25,7 @@ variable "node_group_availability_zone" {
 variable "stable_node_instance_type" {
   description = "EC2 instance type for the on-demand stable node pool (runs stateful/critical workloads e.g. Grafana)"
   type        = string
-  default     = "t3.medium"
+  default     = "t3.large"
 }
 
 variable "stable_node_desired_count" {

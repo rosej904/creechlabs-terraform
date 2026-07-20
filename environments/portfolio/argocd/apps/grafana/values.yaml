@@ -48,3 +48,5 @@ resources:
 
 nodeSelector:
   node-lifecycle: on-demand
+
+priorityClassName: stable-node-critical
