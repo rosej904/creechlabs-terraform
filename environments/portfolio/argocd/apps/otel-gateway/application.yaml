@@ -14,7 +14,7 @@ spec:
           - '$values/environments/portfolio/argocd/apps/otel-gateway/values.yaml'
 
     - repoURL: 'git@github.com:rosej904/creechlabs-terraform.git'
-      targetRevision: main
+      targetRevision: feat/agent-ide-observability
       ref: values
 
   destination:

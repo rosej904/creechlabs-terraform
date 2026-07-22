@@ -126,6 +126,7 @@ config:
         # - action: insert
         #   key: loki.resource.labels
         #   value: service.name, service.source
+    deltatocumulative: {}
 
   service:
     pipelines:
@@ -143,7 +144,7 @@ config:
         exporters: [prometheusremotewrite]
       metrics/external:
         receivers: [otlp/external]
-        processors: [memory_limiter, attributes/external_source, batch]
+        processors: [memory_limiter, attributes/external_source, deltatocumulative, batch]
         exporters: [prometheusremotewrite]
       logs:
         receivers: [otlp]
