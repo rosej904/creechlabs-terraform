@@ -1,3 +1,4 @@
+# .claudeignore — best-effort only, not a hard security boundary
 *.tfvars
 *.tfstate
 *.tfstate.backup
