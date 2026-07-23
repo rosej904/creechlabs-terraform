@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   sources:
-    - repoURL: https://grafana-community.github.io/helm-charts
+    - repoURL: https://grafana.github.io/helm-charts
       chart: mimir-distributed
       targetRevision: 6.1.0
       helm:
