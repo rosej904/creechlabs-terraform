@@ -19,7 +19,7 @@ serviceAccount:
   create: true
   annotations:
     # Fill in with the actual ARN of aws_iam_role.mimir_irsa from eks-infra.
-    eks.amazonaws.com/role-arn: "<mimir-irsa-role-arn>"
+    eks.amazonaws.com/role-arn: "arn:aws:iam::445606683808:role/cl-portfolio-mimir-irsa"
 
 # The chart bundles demo-only MinIO and Kafka deployments for quickstart
 # use. We're using real S3 and classic architecture, so both are unneeded
