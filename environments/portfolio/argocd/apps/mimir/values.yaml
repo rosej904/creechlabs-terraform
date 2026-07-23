@@ -1,51 +1,35 @@
-# mimir-distributed 6.1.0 values — classic architecture (no Kafka), zone
-# awareness disabled, single replica per component.
-#
-# CORRECTION: there is no real "monolithic" mode in the official chart —
-# `deploymentMode: monolithic` (used in a prior version of this file) came
-# from an unmerged community PR, and Helm silently ignored the unknown key.
-# This is the closest real equivalent: microservices mode, but with
-# zone-aware replication turned off and every replica count set to 1, so
-# you get one pod per component instead of 3x zone-replicated StatefulSets
-# for ingester/store-gateway. Chart 6.0+ also defaults to Kafka-backed
-# ingest storage, which stays disabled below.
-
-# Makes the release name predictable ("mimir") so the K8s service account
-# name is deterministic — this MUST match the "sub" claim in the IRSA
-# trust policy on the mimir_irsa role (system:serviceaccount:observability:mimir).
 fullnameOverride: mimir
 
 serviceAccount:
   create: true
   annotations:
-    # Fill in with the actual ARN of aws_iam_role.mimir_irsa from eks-infra.
     eks.amazonaws.com/role-arn: "arn:aws:iam::445606683808:role/cl-portfolio-mimir-irsa"
 
-# The chart bundles demo-only MinIO and Kafka deployments for quickstart
-# use. We're using real S3 and classic architecture, so both are unneeded
-# — leaving either enabled would spin up extra StatefulSets you don't want.
+# Straight to S3 for lite fotprint
 minio:
   enabled: false
 
 kafka:
   enabled: false
 
-# Collapses ingester from 3x zone-replicated StatefulSets down to one.
 ingester:
   replicas: 1
   zoneAwareReplication:
     enabled: false
 
-# Same collapse for store-gateway.
 store_gateway:
   replicas: 1
   zoneAwareReplication:
     enabled: false
 
+querier:
+  replicas: 1
+
+query_scheduler:
+  replicas: 1
+
 mimir:
   structuredConfig:
-    # No multi-tenancy needed for a single-source (Prometheus remote_write)
-    # setup — avoids having to send an X-Scope-OrgID header.
     multitenancy_enabled: false
 
     # Explicitly opt out of the new Kafka-backed ingest storage path and
@@ -69,13 +53,8 @@ mimir:
           endpoint: s3.us-east-1.amazonaws.com
           # No access_key_id / secret_access_key — auth is handled by
           # IRSA via the service account annotation above. The AWS SDK
-          # inside Mimir picks up credentials automatically; putting
-          # static keys here would be both unnecessary and a step backward.
+          # inside Mimir picks up credentials automatically
 
-    # All three storage types share the one bucket from mimir-storage —
-    # no new buckets needed. Mimir requires each to use a distinct prefix
-    # within a shared bucket, or it refuses to start (they'd otherwise
-    # collide at the same object paths).
     blocks_storage:
       s3:
         bucket_name: cl-portfolio-mimir-blocks-445606683808
@@ -90,7 +69,6 @@ mimir:
       storage_prefix: ruler
 
     limits:
-      # 30-day retention, enforced by the compactor.
       compactor_blocks_retention_period: 30d
 
       # Demo-scale ceiling, well above what a portfolio cluster will
