@@ -75,6 +75,7 @@ mimir:
       # ever push — just guards against a runaway scrape config eating
       # memory unbounded. Raise if you hit the limit legitimately.
       max_global_series_per_user: 200000
+      max_label_names_per_series: 45
 
 # NOT YET SET: per-component disk (ingester.persistentVolume.size,
 # store_gateway.persistentVolume.size, etc.) and per-component resources
