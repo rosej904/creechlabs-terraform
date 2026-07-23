@@ -72,18 +72,22 @@ mimir:
           # inside Mimir picks up credentials automatically; putting
           # static keys here would be both unnecessary and a step backward.
 
-    # All three storage types point at the one bucket from mimir-storage.
-    # Fine for this scale — see prior discussion on splitting these out
-    # if you ever turn on the ruler for alerting.
+    # All three storage types share the one bucket from mimir-storage —
+    # no new buckets needed. Mimir requires each to use a distinct prefix
+    # within a shared bucket, or it refuses to start (they'd otherwise
+    # collide at the same object paths).
     blocks_storage:
       s3:
         bucket_name: cl-portfolio-mimir-blocks-445606683808
+      storage_prefix: blocks
     alertmanager_storage:
       s3:
         bucket_name: cl-portfolio-mimir-blocks-445606683808
+      storage_prefix: alertmanager
     ruler_storage:
       s3:
         bucket_name: cl-portfolio-mimir-blocks-445606683808
+      storage_prefix: ruler
 
     limits:
       # 30-day retention, enforced by the compactor.
