@@ -1,12 +1,14 @@
-# mimir-distributed 6.1.0 values — monolithic mode, classic architecture (no Kafka)
+# mimir-distributed 6.1.0 values — classic architecture (no Kafka), zone
+# awareness disabled, single replica per component.
 #
-# Chart 6.0+ defaults to the "ingest storage" architecture, which requires
-# a Kafka backend. We don't want that here, so ingest_storage is explicitly
-# disabled below and monolithic deploymentMode is forced. Result: a single
-# Mimir pod handling distributor/ingester/querier/compactor/store-gateway
-# internally, writing blocks straight to S3 — no Kafka, no Zookeeper.
-
-deploymentMode: monolithic
+# CORRECTION: there is no real "monolithic" mode in the official chart —
+# `deploymentMode: monolithic` (used in a prior version of this file) came
+# from an unmerged community PR, and Helm silently ignored the unknown key.
+# This is the closest real equivalent: microservices mode, but with
+# zone-aware replication turned off and every replica count set to 1, so
+# you get one pod per component instead of 3x zone-replicated StatefulSets
+# for ingester/store-gateway. Chart 6.0+ also defaults to Kafka-backed
+# ingest storage, which stays disabled below.
 
 # Makes the release name predictable ("mimir") so the K8s service account
 # name is deterministic — this MUST match the "sub" claim in the IRSA
@@ -17,7 +19,7 @@ serviceAccount:
   create: true
   annotations:
     # Fill in with the actual ARN of aws_iam_role.mimir_irsa from eks-infra.
-    eks.amazonaws.com/role-arn: "arn:aws:iam::445606683808:role/cl-portfolio-mimir-irsa"
+    eks.amazonaws.com/role-arn: "<mimir-irsa-role-arn>"
 
 # The chart bundles demo-only MinIO and Kafka deployments for quickstart
 # use. We're using real S3 and classic architecture, so both are unneeded
@@ -27,6 +29,18 @@ minio:
 
 kafka:
   enabled: false
+
+# Collapses ingester from 3x zone-replicated StatefulSets down to one.
+ingester:
+  replicas: 1
+  zoneAwareReplication:
+    enabled: false
+
+# Same collapse for store-gateway.
+store_gateway:
+  replicas: 1
+  zoneAwareReplication:
+    enabled: false
 
 mimir:
   structuredConfig:
@@ -41,10 +55,9 @@ mimir:
     ingester:
       push_grpc_method_enabled: true
 
-      # Monolithic mode here means a single Mimir instance, not a
-      # replicated ingester ring — replication_factor: 3 (the chart
-      # default) would make it wait on quorum from ingesters that
-      # don't exist. Set to 1 for a single-node deployment.
+      # With only 1 ingester (see above), replication_factor: 3 (the
+      # chart default) would make writes wait on quorum from ingesters
+      # that don't exist and never succeed. Set to 1 to match.
       ring:
         replication_factor: 1
 
@@ -81,22 +94,12 @@ mimir:
       # memory unbounded. Raise if you hit the limit legitimately.
       max_global_series_per_user: 200000
 
-# Local disk for WAL + short-term TSDB before blocks ship to S3 (this is
-# separate from the durable S3 storage — see earlier discussion on why
-# Prometheus/Mimir still need local disk even with S3 as the backend).
-# Match this to whatever storageClass/AZ pinning the rest of your
-# observability stack uses (Prometheus PVs are pinned to us-east-1a to
-# match the NAT Gateway) — adjust storageClass below if it's not "gp3".
-persistence:
-  enabled: true
-  storageClass: gp3
-  size: 10Gi
-
-# Resource requests sized modest for a single-node demo cluster.
-# Tune based on what you actually see it use.
-resources:
-  requests:
-    cpu: 250m
-    memory: 512Mi
-  limits:
-    memory: 1Gi
+# NOT YET SET: per-component disk (ingester.persistentVolume.size,
+# store_gateway.persistentVolume.size, etc.) and per-component resources
+# (ingester.resources, distributor.resources, ...) — the chart has no
+# global top-level key for either, each component defines its own block.
+# Chart defaults are reasonable to start (e.g. ingester PV defaults to
+# 2Gi) — worth a follow-up pass once you see it running, rather than me
+# guessing sizes for every component right now. Same applies to AZ
+# pinning: ingester/store_gateway.affinity or .nodeSelector, per
+# component, if the single private subnet doesn't already make it moot.
