@@ -1,0 +1,102 @@
+# mimir-distributed 6.1.0 values — monolithic mode, classic architecture (no Kafka)
+#
+# Chart 6.0+ defaults to the "ingest storage" architecture, which requires
+# a Kafka backend. We don't want that here, so ingest_storage is explicitly
+# disabled below and monolithic deploymentMode is forced. Result: a single
+# Mimir pod handling distributor/ingester/querier/compactor/store-gateway
+# internally, writing blocks straight to S3 — no Kafka, no Zookeeper.
+
+deploymentMode: monolithic
+
+# Makes the release name predictable ("mimir") so the K8s service account
+# name is deterministic — this MUST match the "sub" claim in the IRSA
+# trust policy on the mimir_irsa role (system:serviceaccount:observability:mimir).
+fullnameOverride: mimir
+
+serviceAccount:
+  create: true
+  annotations:
+    # Fill in with the actual ARN of aws_iam_role.mimir_irsa from eks-infra.
+    eks.amazonaws.com/role-arn: "arn:aws:iam::445606683808:role/cl-portfolio-mimir-irsa"
+
+# The chart bundles demo-only MinIO and Kafka deployments for quickstart
+# use. We're using real S3 and classic architecture, so both are unneeded
+# — leaving either enabled would spin up extra StatefulSets you don't want.
+minio:
+  enabled: false
+
+kafka:
+  enabled: false
+
+mimir:
+  structuredConfig:
+    # No multi-tenancy needed for a single-source (Prometheus remote_write)
+    # setup — avoids having to send an X-Scope-OrgID header.
+    multitenancy_enabled: false
+
+    # Explicitly opt out of the new Kafka-backed ingest storage path and
+    # stay on the classic architecture (ingesters write blocks directly).
+    ingest_storage:
+      enabled: false
+    ingester:
+      push_grpc_method_enabled: true
+
+      # Monolithic mode here means a single Mimir instance, not a
+      # replicated ingester ring — replication_factor: 3 (the chart
+      # default) would make it wait on quorum from ingesters that
+      # don't exist. Set to 1 for a single-node deployment.
+      ring:
+        replication_factor: 1
+
+    common:
+      storage:
+        backend: s3
+        s3:
+          region: us-east-1
+          endpoint: s3.us-east-1.amazonaws.com
+          # No access_key_id / secret_access_key — auth is handled by
+          # IRSA via the service account annotation above. The AWS SDK
+          # inside Mimir picks up credentials automatically; putting
+          # static keys here would be both unnecessary and a step backward.
+
+    # All three storage types point at the one bucket from mimir-storage.
+    # Fine for this scale — see prior discussion on splitting these out
+    # if you ever turn on the ruler for alerting.
+    blocks_storage:
+      s3:
+        bucket_name: cl-portfolio-mimir-blocks-445606683808
+    alertmanager_storage:
+      s3:
+        bucket_name: cl-portfolio-mimir-blocks-445606683808
+    ruler_storage:
+      s3:
+        bucket_name: cl-portfolio-mimir-blocks-445606683808
+
+    limits:
+      # 30-day retention, enforced by the compactor.
+      compactor_blocks_retention_period: 30d
+
+      # Demo-scale ceiling, well above what a portfolio cluster will
+      # ever push — just guards against a runaway scrape config eating
+      # memory unbounded. Raise if you hit the limit legitimately.
+      max_global_series_per_user: 200000
+
+# Local disk for WAL + short-term TSDB before blocks ship to S3 (this is
+# separate from the durable S3 storage — see earlier discussion on why
+# Prometheus/Mimir still need local disk even with S3 as the backend).
+# Match this to whatever storageClass/AZ pinning the rest of your
+# observability stack uses (Prometheus PVs are pinned to us-east-1a to
+# match the NAT Gateway) — adjust storageClass below if it's not "gp3".
+persistence:
+  enabled: true
+  storageClass: gp3
+  size: 10Gi
+
+# Resource requests sized modest for a single-node demo cluster.
+# Tune based on what you actually see it use.
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    memory: 1Gi
