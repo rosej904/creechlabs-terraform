@@ -1,6 +1,9 @@
 server:
   extraArgs:
     web.enable-remote-write-receiver: ""
+    
+  remoteWrite:
+    - url: http://mimir-gateway.observability.svc.cluster.local/api/v1/push
 
   persistentVolume:
     enabled: true
