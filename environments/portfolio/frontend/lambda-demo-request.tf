@@ -180,7 +180,7 @@ output "demo_request_lambda_name" {
        ip             = "$context.identity.sourceIp"
        # sourceIp above is the CloudFront edge, not the visitor. CloudFront
        # appends the real client for you.
-       clientIp       = "$context.request.header.x-forwarded-for"
+       #clientIp       = "$context.request.header.x-forwarded-for"
        requestTime    = "$context.requestTime"
        httpMethod     = "$context.httpMethod"
        routeKey       = "$context.routeKey"
