@@ -119,3 +119,9 @@ variable "mcp_endpoint" {
   type        = string
   default     = "https://mcp.creechlabs.dev"
 }
+
+demo_notify_email" {
+  description = "Demo Request Notification Email"
+  type        = string
+  default     = "jordan_rose@creechlabs.dev"
+}
