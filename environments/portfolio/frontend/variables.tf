@@ -124,15 +124,3 @@ variable "demo_notify_email" {
   description = "Address that receives demo requests. Must be a real inbox you can click a verification link in."
   type        = string
 }
-
-variable "cloudflare_api_token" {
-  description = "Cloudflare api token should be gitignored in terraform.tfvars"
-  type        = string
-  default     = ""
-}
-
-variable "cloudflare_zone_id" {
-  description = "Cloudflare zone id token may also be gitignored in terraform.tfvars"
-  type        = string
-  default     = ""
-}
