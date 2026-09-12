@@ -5,8 +5,12 @@ import { IS_ON_DEMAND, demoCopy, statusLabel } from '../config/demoMode'
 const GRAFANA_URL =
   'https://grafana.creechlabs.dev/d/llmdemo-pub/ai-workloads-llm-observability-and-metering?orgId=2&timezone=browser&kiosk&theme=dark&refresh=15s'
 
-export default function GrafanaChatPanel({ status }) {
-  const grafanaStatus = status?.apps?.detail?.grafana?.status ?? (status ? 'down' : undefined)
+// Takes the status value directly rather than a status object. AnriWidget used
+// to synthesise { apps: { detail: { grafana: { status: undefined } } } }, which
+// is truthy — so the old `?? (status ? 'down' : undefined)` fallback reported
+// "Degraded" whenever /api/status was simply unreachable. Grey/unknown is the
+// honest answer there, and it matches what StatusStrip shows.
+export default function GrafanaChatPanel({ grafanaStatus }) {
   const isUp = grafanaStatus === 'up'
 
   return (

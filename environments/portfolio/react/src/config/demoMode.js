@@ -79,6 +79,19 @@ export const demoCopy = {
     ? 'Full build from empty, torn down to $0'
     : 'Scheduled rebuild every weekday',
 
+  /* AwsResourceTable */
+  resourcesUnavailable: IS_ON_DEMAND
+    ? 'Status API unreachable'
+    : 'Stack offline — weekdays 9am–5pm ET',
+
+  resourcesEmpty: IS_ON_DEMAND
+    ? 'No ephemeral resources exist right now. The cluster, nodes, load balancer, and VPC are created per demo and destroyed afterwards — the rows below appear once a build runs.'
+    : 'No ephemeral resources exist right now. They are rebuilt on the next scheduled run.',
+
+  resourcesFootnote: IS_ON_DEMAND
+    ? 'Ephemeral resources are created from infrastructure-as-code per demo and destroyed afterwards.'
+    : 'All ephemeral resources are destroyed nightly at 5pm ET and rebuilt from infrastructure-as-code at 9am ET weekdays.',
+
   /* DemoShowcase overlay */
   showcase: {
     heading: 'See it running',

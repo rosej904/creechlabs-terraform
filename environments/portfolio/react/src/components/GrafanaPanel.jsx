@@ -6,7 +6,8 @@ const GRAFANA_URL =
   'https://grafana.creechlabs.dev/d/demo-pub/demo?orgId=2&kiosk&theme=dark'
 
 export default function GrafanaPanel({ status }) {
-  const grafanaStatus = status?.apps?.detail?.grafana?.status ?? (status ? 'down' : undefined)
+  // No data (API unreachable) stays undefined -> grey dot, no label.
+  const grafanaStatus = status?.apps?.detail?.grafana?.status
   const isUp = grafanaStatus === 'up'
   // EKS reports CREATING/UPDATING while a build runs; show progress rather
   // than inviting another demo request.

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import DemoRequestButton from './DemoRequestButton'
+import { IS_ON_DEMAND, demoCopy } from '../config/demoMode'
 
 const MOCK_RESOURCES = {
   fetched_at: null,
@@ -85,7 +87,9 @@ export default function AwsResourceTable() {
           {loadState === 'offline' && (
             <>
               <span className="w-2 h-2 rounded-full bg-[var(--color-text-tertiary)] shrink-0" />
-              <span className="text-xs text-[var(--color-text-tertiary)]">Stack offline — weekdays 9am–5pm ET</span>
+              <span className="text-xs text-[var(--color-text-tertiary)]">
+                {demoCopy.resourcesUnavailable}
+              </span>
             </>
           )}
         </div>
@@ -98,7 +102,17 @@ export default function AwsResourceTable() {
         )}
       </div>
 
-      {/* Table */}
+      {/* Empty state — API answered, but nothing is running. Without this the
+          count > 0 filter leaves a bare header row that looks like a bug. */}
+      {loadState !== 'loading' && visibleRows.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-[var(--color-border)] px-5 py-8 flex flex-col items-center gap-3 text-center">
+          <i className="ti ti-cloud-off text-2xl text-[var(--color-text-tertiary)]" aria-hidden="true" />
+          <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed max-w-sm">
+            {demoCopy.resourcesEmpty}
+          </p>
+          {IS_ON_DEMAND && <DemoRequestButton variant="subtle" className="mt-1" />}
+        </div>
+      ) : (
       <div className="rounded-xl overflow-hidden border border-[var(--color-border)]">
         <table className="w-full text-xs">
           <thead>
@@ -146,9 +160,10 @@ export default function AwsResourceTable() {
           </tbody>
         </table>
       </div>
+      )}
 
       <p className="text-xs text-[var(--color-text-tertiary)] mt-3 leading-relaxed">
-        All ephemeral resources are destroyed nightly at 5pm ET and rebuilt from infrastructure-as-code at 9am ET weekdays.
+        {demoCopy.resourcesFootnote}
         {hasCosts && ' Costs reflect the last 30 days including partial days.'}
       </p>
     </div>

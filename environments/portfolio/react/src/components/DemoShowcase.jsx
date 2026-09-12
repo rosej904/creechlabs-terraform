@@ -31,7 +31,16 @@ const SHOTS = [
   },
 ]
 
-function Thumb({ shot, onOpen }) {
+// Each tile's label sits in its OUTER corner so nothing collides with the
+// centred CTA card, which covers the point where the four panels meet.
+const CHIP_CORNER = [
+  'top-2 left-2',
+  'top-2 right-2',
+  'bottom-2 left-2',
+  'bottom-2 right-2',
+]
+
+function Thumb({ shot, index, onOpen }) {
   const [failed, setFailed] = useState(false)
 
   if (failed) {
@@ -46,7 +55,7 @@ function Thumb({ shot, onOpen }) {
   return (
     <button
       onClick={onOpen}
-      className="group relative h-full w-full min-h-0 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+      className="group relative h-full w-full min-h-0 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] transition-colors hover:border-[var(--color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
       aria-label={`View ${shot.label} full size`}
     >
       <img
@@ -56,14 +65,14 @@ function Thumb({ shot, onOpen }) {
         onError={() => setFailed(true)}
         className="h-full w-full object-cover object-top transition-opacity group-hover:opacity-95"
       />
-      {/* Label chip — sits top-left so the bottom stays clear for the CTA */}
-      <span className="pointer-events-none absolute top-2 left-2 rounded-lg px-2 py-1 text-[11px] text-[var(--color-text-secondary)] backdrop-blur-sm"
+      {/* Label chip — outer corner, with the zoom affordance folded in so
+          there is no second element to collide with the CTA. */}
+      <span
+        className={`pointer-events-none absolute ${CHIP_CORNER[index]} flex items-center gap-1.5 rounded-lg px-2 py-1 text-[11px] text-[var(--color-text-secondary)] backdrop-blur-sm transition-colors group-hover:text-[var(--color-accent)]`}
         style={{ backgroundColor: 'rgba(13,17,23,0.72)' }}
       >
         {shot.label}
-      </span>
-      <span className="pointer-events-none absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <i className="ti ti-maximize text-sm text-[var(--color-accent)]" aria-hidden="true" />
+        <i className="ti ti-maximize text-xs opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
       </span>
     </button>
   )
@@ -80,7 +89,7 @@ export default function DemoShowcase() {
       {/* Screenshot grid — unblurred, this is the exhibit */}
       <div className="grid h-full min-h-0 grid-cols-2 grid-rows-2 gap-2 p-2">
         {SHOTS.map((s, i) => (
-          <Thumb key={s.src} shot={s} onOpen={() => setLightbox(i)} />
+          <Thumb key={s.src} shot={s} index={i} onOpen={() => setLightbox(i)} />
         ))}
       </div>
 
@@ -90,13 +99,13 @@ export default function DemoShowcase() {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            'linear-gradient(to top, rgba(13,17,23,0.96) 0%, rgba(13,17,23,0.82) 16%, rgba(13,17,23,0.28) 40%, rgba(13,17,23,0) 62%)',
+            'radial-gradient(ellipse 58% 50% at 50% 50%, rgba(13,17,23,0.92) 0%, rgba(13,17,23,0.78) 40%, rgba(13,17,23,0.22) 72%, rgba(13,17,23,0) 100%)',
         }}
         aria-hidden="true"
       />
 
-      {/* CTA card — bottom centre, floating over the vignette */}
-      <div className="absolute inset-x-0 bottom-0 flex justify-center p-4 md:p-6">
+      {/* CTA card — dead centre, over the point where the four panels meet */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-4 md:p-6">
         <div
           className="pointer-events-auto w-full max-w-xl rounded-2xl border border-[var(--color-border)] px-5 py-4 text-center backdrop-blur-sm"
           style={{
