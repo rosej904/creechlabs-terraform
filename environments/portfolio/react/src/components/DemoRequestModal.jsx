@@ -101,7 +101,7 @@ export default function DemoRequestModal({ onClose }) {
           </p>
           <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
             Once it reaches me I kick off the build — the cluster and telemetry pipelines
-            take {PROVISION_ETA} to come up, then you get a link with credentials.
+            take {PROVISION_ETA} to come up, then this demo will be live!
           </p>
           <div className="mt-2 flex items-center gap-2 text-xs text-[var(--color-text-tertiary)]">
             <span>
@@ -140,7 +140,7 @@ export default function DemoRequestModal({ onClose }) {
             type="text"
             value={form.name}
             onChange={set('name')}
-            placeholder="Alex Rivera"
+            placeholder="Jordan Rose"
             className={inputClass}
             autoComplete="name"
           />
@@ -152,7 +152,7 @@ export default function DemoRequestModal({ onClose }) {
             type="email"
             value={form.email}
             onChange={set('email')}
-            placeholder="alex@company.com"
+            placeholder="jordan_rose@creechlabs.dev"
             className={inputClass}
             autoComplete="email"
           />
@@ -164,7 +164,7 @@ export default function DemoRequestModal({ onClose }) {
             type="text"
             value={form.company}
             onChange={set('company')}
-            placeholder="Acme"
+            placeholder="Creechlabs"
             className={inputClass}
             autoComplete="organization"
           />

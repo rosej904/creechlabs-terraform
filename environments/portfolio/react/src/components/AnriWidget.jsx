@@ -198,7 +198,7 @@ export default function AnriWidget({ grafanaStatus, bubbleStyle }) {
           >
             {/* Left — GrafanaChatPanel (desktop only) */}
             <div className="hidden md:flex flex-col flex-1 min-w-0 border-r border-[var(--color-border)]">
-              <GrafanaChatPanel status={{ apps: { detail: { grafana: { status: grafanaStatus } } } }} />
+              <GrafanaChatPanel grafanaStatus={grafanaStatus} />
             </div>
 
             {/* Right — Chat */}

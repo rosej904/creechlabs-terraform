@@ -15,13 +15,13 @@ export const SCHEDULE_WINDOW = 'weekdays 9am–5pm ET'
 export const PROVISION_ETA = 'about 20 minutes'
 
 /** Where demo requests land. Also used as the mailto fallback target. */
-export const DEMO_CONTACT_EMAIL = 'demo@creechlabs.dev'
+export const DEMO_CONTACT_EMAIL = 'jordan_rose@creechlabs.dev'
 
 /**
  * Set to '/api/demo-request' once the SES-backed Lambda route is live.
  * While null, the request form falls back to a prefilled mailto: link.
  */
-export const DEMO_REQUEST_ENDPOINT = null
+export const DEMO_REQUEST_ENDPOINT = '/api/demo-request'
 
 export const demoCopy = {
   /* Hero — desktop */
@@ -96,10 +96,10 @@ export const demoCopy = {
   showcase: {
     heading: 'See it running',
     body: IS_ON_DEMAND
-      ? `Nothing is running right now — that is the point. Request a demo and the cluster, GitOps sync, and telemetry pipelines build from scratch in ${PROVISION_ETA}, then you get a link.`
+      ? `Nothing is running right now. Request a live demo and the environment will be provisioned in about ${PROVISION_ETA}!`
       : `The cluster runs ${SCHEDULE_WINDOW}. Request a demo for a window outside that.`,
     cta: 'Request a demo',
-    footnote: 'Requests are handled by hand today. Self-serve provisioning is next.',
+    footnote: 'Requests are sent to my email for validation.',
     building:
       'A build is running right now — the cluster, GitOps sync, and telemetry pipelines are coming up. This panel goes live on its own when Grafana starts answering.',
   },
