@@ -1,7 +1,11 @@
 """
 Handler for POST /api/demo-request.
 
-Drop into cl-portfolio-status-checker and route on path, or deploy standalone.
+Deploys as its own function (cl-portfolio-demo-request), NOT merged into the
+status checker — that role carries broad account read access and this is an
+unauthenticated public write path.
+
+Lives at lambda/demo_request/index.py to match the status_checker layout.
 Set DEMO_REQUEST_ENDPOINT = '/api/demo-request' in src/config/demoMode.js to
 switch the frontend off the mailto fallback.
 """

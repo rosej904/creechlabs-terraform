@@ -28,7 +28,6 @@ data "aws_iam_policy_document" "demo_request_assume" {
 resource "aws_iam_role" "demo_request" {
   name               = "${local.demo_request_function_name}-role"
   assume_role_policy = data.aws_iam_policy_document.demo_request_assume.json
-  tags               = local.chat_tags
 }
 
 resource "aws_iam_role_policy_attachment" "demo_request_basic" {
@@ -63,20 +62,21 @@ resource "aws_iam_role_policy" "demo_request_policy" {
 
 # ---------------------------------------------------------------------------
 # Lambda deployment package
-# archive_file is safe here, unlike the chat Lambda: this is a single file
-# with no third-party dependencies (boto3 ships in the runtime), so there are
-# no vendored wheels for the system Python to get wrong. Nothing to `make build`.
+# Same pattern as status_checker in lambda.tf. archive_file is safe here,
+# unlike the chat Lambda: no third-party dependencies (boto3 ships in the
+# runtime), so there are no vendored wheels for the system Python to get
+# wrong. Nothing to `make build`.
 # ---------------------------------------------------------------------------
 data "archive_file" "demo_request" {
   type        = "zip"
-  source_file = "${path.module}/lambda/demo_request/demo_request.py"
+  source_dir  = "${path.module}/lambda/demo_request"
   output_path = "${path.module}/lambda/demo_request.zip"
 }
 
 resource "aws_lambda_function" "demo_request" {
   function_name    = local.demo_request_function_name
   role             = aws_iam_role.demo_request.arn
-  handler          = "demo_request.handler"
+  handler          = "index.handler"
   runtime          = "python3.13"
   filename         = data.archive_file.demo_request.output_path
   source_code_hash = data.archive_file.demo_request.output_base64sha256
@@ -91,13 +91,15 @@ resource "aws_lambda_function" "demo_request" {
     }
   }
 
-  tags = local.chat_tags
+  depends_on = [
+    aws_cloudwatch_log_group.demo_request,
+    aws_iam_role_policy_attachment.demo_request_basic,
+  ]
 }
 
 resource "aws_cloudwatch_log_group" "demo_request" {
   name              = "/aws/lambda/${local.demo_request_function_name}"
   retention_in_days = var.lambda_log_retention_days
-  tags              = local.chat_tags
 }
 
 # ---------------------------------------------------------------------------
@@ -143,48 +145,48 @@ output "demo_request_lambda_name" {
 # account default of 10,000 req/s — on endpoints that call Anthropic and SES.
 ###############################################################################
 #
- resource "aws_apigatewayv2_stage" "default" {
-   api_id      = aws_apigatewayv2_api.status_api.id
-   name        = "$default"
-   auto_deploy = true
-
-   # Applies to any route without an override below. Sized for the read
-   # endpoints, which the frontend polls once a minute per visitor.
-   default_route_settings {
-     throttling_rate_limit    = 20
-     throttling_burst_limit   = 40
-     detailed_metrics_enabled = true
-   }
-
-   # Costs real money per call. The DynamoDB daily cap protects the budget
-   # over a day; this protects it over a second.
-   route_settings {
-     route_key              = "POST /api/chat"
-     throttling_rate_limit  = 2
-     throttling_burst_limit = 5
-   }
-
-   # A human filling in a form needs exactly one request.
-   route_settings {
-     route_key              = "POST /api/demo-request"
-     throttling_rate_limit  = 1
-     throttling_burst_limit = 3
-   }
-
-   access_log_settings {
-     destination_arn = aws_cloudwatch_log_group.status_api_access_logs.arn
-     format = jsonencode({
-       requestId      = "$context.requestId"
-       ip             = "$context.identity.sourceIp"
-       # sourceIp above is the CloudFront edge, not the visitor. CloudFront
-       # appends the real client for you.
-       clientIp       = "$context.request.header.x-forwarded-for"
-       requestTime    = "$context.requestTime"
-       httpMethod     = "$context.httpMethod"
-       routeKey       = "$context.routeKey"
-       status         = "$context.status"
-       responseLength = "$context.responseLength"
-       integrationErr = "$context.integrationErrorMessage"
-     })
-   }
- }
+# resource "aws_apigatewayv2_stage" "default" {
+#   api_id      = aws_apigatewayv2_api.status_api.id
+#   name        = "$default"
+#   auto_deploy = true
+#
+#   # Applies to any route without an override below. Sized for the read
+#   # endpoints, which the frontend polls once a minute per visitor.
+#   default_route_settings {
+#     throttling_rate_limit    = 20
+#     throttling_burst_limit   = 40
+#     detailed_metrics_enabled = true
+#   }
+#
+#   # Costs real money per call. The DynamoDB daily cap protects the budget
+#   # over a day; this protects it over a second.
+#   route_settings {
+#     route_key              = "POST /api/chat"
+#     throttling_rate_limit  = 2
+#     throttling_burst_limit = 5
+#   }
+#
+#   # A human filling in a form needs exactly one request.
+#   route_settings {
+#     route_key              = "POST /api/demo-request"
+#     throttling_rate_limit  = 1
+#     throttling_burst_limit = 3
+#   }
+#
+#   access_log_settings {
+#     destination_arn = aws_cloudwatch_log_group.status_api_access_logs.arn
+#     format = jsonencode({
+#       requestId      = "$context.requestId"
+#       ip             = "$context.identity.sourceIp"
+#       # sourceIp above is the CloudFront edge, not the visitor. CloudFront
+#       # appends the real client for you.
+#       clientIp       = "$context.request.header.x-forwarded-for"
+#       requestTime    = "$context.requestTime"
+#       httpMethod     = "$context.httpMethod"
+#       routeKey       = "$context.routeKey"
+#       status         = "$context.status"
+#       responseLength = "$context.responseLength"
+#       integrationErr = "$context.integrationErrorMessage"
+#     })
+#   }
+# }
