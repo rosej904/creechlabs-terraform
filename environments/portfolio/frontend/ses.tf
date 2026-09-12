@@ -13,16 +13,6 @@
 # send confirmation mail *to the requester*.
 ###############################################################################
 
-variable "demo_notify_email" {
-  description = "Address that receives demo requests. Must be a real inbox you can click a verification link in."
-  type        = string
-}
-
-variable "api_lambda_role_name" {
-  description = "IAM role name of the Lambda serving /api/*. Replace with a direct resource reference if the role is defined in this layer."
-  type        = string
-}
-
 # ─── Identity ────────────────────────────────────────────────────────────────
 # Creating this sends a verification email to the address. Until you click the
 # link, SendEmail calls fail with MessageRejected.
