@@ -145,48 +145,48 @@ output "demo_request_lambda_name" {
 # account default of 10,000 req/s — on endpoints that call Anthropic and SES.
 ###############################################################################
 #
-# resource "aws_apigatewayv2_stage" "default" {
-#   api_id      = aws_apigatewayv2_api.status_api.id
-#   name        = "$default"
-#   auto_deploy = true
-#
-#   # Applies to any route without an override below. Sized for the read
-#   # endpoints, which the frontend polls once a minute per visitor.
-#   default_route_settings {
-#     throttling_rate_limit    = 20
-#     throttling_burst_limit   = 40
-#     detailed_metrics_enabled = true
-#   }
-#
-#   # Costs real money per call. The DynamoDB daily cap protects the budget
-#   # over a day; this protects it over a second.
-#   route_settings {
-#     route_key              = "POST /api/chat"
-#     throttling_rate_limit  = 2
-#     throttling_burst_limit = 5
-#   }
-#
-#   # A human filling in a form needs exactly one request.
-#   route_settings {
-#     route_key              = "POST /api/demo-request"
-#     throttling_rate_limit  = 1
-#     throttling_burst_limit = 3
-#   }
-#
-#   access_log_settings {
-#     destination_arn = aws_cloudwatch_log_group.status_api_access_logs.arn
-#     format = jsonencode({
-#       requestId      = "$context.requestId"
-#       ip             = "$context.identity.sourceIp"
-#       # sourceIp above is the CloudFront edge, not the visitor. CloudFront
-#       # appends the real client for you.
-#       clientIp       = "$context.request.header.x-forwarded-for"
-#       requestTime    = "$context.requestTime"
-#       httpMethod     = "$context.httpMethod"
-#       routeKey       = "$context.routeKey"
-#       status         = "$context.status"
-#       responseLength = "$context.responseLength"
-#       integrationErr = "$context.integrationErrorMessage"
-#     })
-#   }
-# }
+ resource "aws_apigatewayv2_stage" "default" {
+   api_id      = aws_apigatewayv2_api.status_api.id
+   name        = "$default"
+   auto_deploy = true
+
+   # Applies to any route without an override below. Sized for the read
+   # endpoints, which the frontend polls once a minute per visitor.
+   default_route_settings {
+     throttling_rate_limit    = 20
+     throttling_burst_limit   = 40
+     detailed_metrics_enabled = true
+   }
+
+   # Costs real money per call. The DynamoDB daily cap protects the budget
+   # over a day; this protects it over a second.
+   route_settings {
+     route_key              = "POST /api/chat"
+     throttling_rate_limit  = 2
+     throttling_burst_limit = 5
+   }
+
+   # A human filling in a form needs exactly one request.
+   route_settings {
+     route_key              = "POST /api/demo-request"
+     throttling_rate_limit  = 1
+     throttling_burst_limit = 3
+   }
+
+   access_log_settings {
+     destination_arn = aws_cloudwatch_log_group.status_api_access_logs.arn
+     format = jsonencode({
+       requestId      = "$context.requestId"
+       ip             = "$context.identity.sourceIp"
+       # sourceIp above is the CloudFront edge, not the visitor. CloudFront
+       # appends the real client for you.
+       clientIp       = "$context.request.header.x-forwarded-for"
+       requestTime    = "$context.requestTime"
+       httpMethod     = "$context.httpMethod"
+       routeKey       = "$context.routeKey"
+       status         = "$context.status"
+       responseLength = "$context.responseLength"
+       integrationErr = "$context.integrationErrorMessage"
+     })
+   }
+ }
