@@ -12,11 +12,6 @@
 # want to send confirmation mail to the requester.
 ###############################################################################
 
-variable "demo_notify_email" {
-  description = "Address that receives demo requests. Must be a real inbox — SES sends a verification link to it."
-  type        = string
-}
-
 # --- Identity ---------------------------------------------------------------
 # Creating this triggers a verification email. Until you click the link,
 # SendEmail fails with MessageRejected.
