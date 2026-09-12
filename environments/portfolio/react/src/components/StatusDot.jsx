@@ -1,11 +1,18 @@
-const STATUS_CONFIG = {
-  up:      { color: 'bg-[var(--color-status-up)]',      label: 'Status: Up' },
-  stopped: { color: 'bg-[var(--color-status-stopped)]', label: 'Status: Scheduled offline' },
-  down:    { color: 'bg-[var(--color-status-down)]',    label: 'Status: Degraded' },
+import { statusLabel } from '../config/demoMode'
+
+const STATUS_COLORS = {
+  up:           'bg-[var(--color-status-up)]',
+  stopped:      'bg-[var(--color-status-stopped)]',
+  down:         'bg-[var(--color-status-down)]',
+  // No dedicated CSS var needed — accent reads as "in progress" and pulses.
+  provisioning: 'bg-[var(--color-accent)] animate-pulse',
 }
 
 export default function StatusDot({ status, showLabel = false, size = 'sm', tooltip = true, tooltipPosition = 'center' }) {
-  const config = STATUS_CONFIG[status] ?? { color: 'bg-[var(--color-text-tertiary)]', label: 'Unknown' }
+  // Label text lives in config/demoMode so 'stopped' reads correctly in both
+  // scheduled and on-demand modes.
+  const color = STATUS_COLORS[status] ?? 'bg-[var(--color-text-tertiary)]'
+  const label = statusLabel(status) || 'Status: Unknown'
   const dotSize = size === 'lg' ? 'w-2.5 h-2.5' : 'w-2 h-2'
 
   const tooltipAlign =
@@ -22,8 +29,8 @@ export default function StatusDot({ status, showLabel = false, size = 'sm', tool
     <span className="inline-flex items-center gap-1.5">
       <span className="relative group/dot inline-flex">
         <span
-          className={`${dotSize} rounded-full ${config.color} shrink-0 block`}
-          aria-label={config.label}
+          className={`${dotSize} rounded-full ${color} shrink-0 block`}
+          aria-label={label}
         />
         {tooltip && status && (
           <span
@@ -37,12 +44,12 @@ export default function StatusDot({ status, showLabel = false, size = 'sm', tool
               z-50 ${tooltipAlign}
             `}
           >
-            {config.label}
+            {label}
           </span>
         )}
       </span>
       {showLabel && (
-        <span className="text-xs text-[var(--color-text-secondary)]">{config.label}</span>
+        <span className="text-xs text-[var(--color-text-secondary)]">{label}</span>
       )}
     </span>
   )

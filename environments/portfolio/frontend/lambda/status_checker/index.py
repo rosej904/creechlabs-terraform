@@ -41,8 +41,10 @@ def check_eks_cluster():
         cluster_status = resp["cluster"]["status"]
         if cluster_status == "ACTIVE":
             return "up", {"clusterStatus": cluster_status}
-        if cluster_status in ("CREATING", "UPDATING"):
-            return "stopped", {"clusterStatus": cluster_status}
+        # A build or teardown is in flight. Distinct from "stopped" so the UI
+        # can show progress instead of inviting another demo request.
+        if cluster_status in ("CREATING", "UPDATING", "DELETING"):
+            return "provisioning", {"clusterStatus": cluster_status}
         return "down", {"clusterStatus": cluster_status}
     except eks_client.exceptions.ResourceNotFoundException:
         return "stopped", {"clusterStatus": "NOT_FOUND"}
@@ -69,14 +71,21 @@ def build_status_body():
     eks_status, eks_detail = check_eks_cluster()
     app_results = {}
     for name, url in STATUS_TARGETS.items():
-        if eks_status == "stopped":
-            app_results[name] = {"status": "stopped", "detail": {"reason": "eks_stopped"}}
+        # No cluster, or one mid-build: skip the HTTP probes. Each would burn
+        # HTTP_TIMEOUT_SECONDS waiting on an ingress that does not exist yet.
+        if eks_status in ("stopped", "provisioning"):
+            app_results[name] = {
+                "status": eks_status,
+                "detail": {"reason": f"eks_{eks_status}"},
+            }
             continue
         status, detail = check_http_target(name, url)
         app_results[name] = {"status": status, "detail": detail}
 
     app_statuses = [r["status"] for r in app_results.values()]
-    if all(s == "stopped" for s in app_statuses):
+    if all(s == "provisioning" for s in app_statuses):
+        apps_aggregate = "provisioning"
+    elif all(s == "stopped" for s in app_statuses):
         apps_aggregate = "stopped"
     elif any(s == "down" for s in app_statuses):
         apps_aggregate = "down"

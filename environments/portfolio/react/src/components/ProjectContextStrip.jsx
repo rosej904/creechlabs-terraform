@@ -1,25 +1,22 @@
+import { demoCopy } from '../config/demoMode'
+
 const COLUMNS = [
   {
     icon: 'ti-alert-triangle',
     label: 'What?',
-    detail: 'Production-grade observability on a $0/day budget — EKS, ArgoCD, and the full LGTM stack rebuilt automatically every morning and torn down every night.',
+    detail: demoCopy.contextWhat,
   },
   {
     icon: 'ti-chart-dots-3',
     label: 'Why?',
-    detail: 'Showcase telemetry in context overlaid with Continuous Reliability & SLO-Driven Operations concepts! (also its fun)',
+    detail:
+      'Showcase telemetry in context, overlaid with Continuous Reliability & SLO-driven operations concepts. (Also it is fun.)',
   },
   {
     icon: 'ti-refresh',
     label: 'How?',
-    detail: 'Fully ephemeral - EKS, networking, and all workloads are declared in Terraform and ArgoCD. The entire stack is torn down at 5pm ET and rebuilt from scratch at 9am — automatically, every weekday.',
+    detail: demoCopy.contextHow,
   },
-  // {
-  //   icon: 'ti-chart-dots-3',
-  //   label: 'Label?',
-  //   summary: 'Summary',
-  //   detail: 'Details',
-  // },
 ]
 
 export default function ProjectContextStrip() {
@@ -34,9 +31,6 @@ export default function ProjectContextStrip() {
                 {col.label}
               </p>
             </div>
-            <p className="text-sm font-medium text-[var(--color-text-primary)] leading-snug">
-              {col.summary}
-            </p>
             <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed mr-2">
               {col.detail}
             </p>

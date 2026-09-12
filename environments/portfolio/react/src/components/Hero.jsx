@@ -1,3 +1,5 @@
+import { demoCopy } from '../config/demoMode'
+
 // Drop your profile image into public/images/profile.jpg (or .png/.webp).
 // If the file doesn't exist the initials fallback shows automatically.
 const PROFILE_IMAGE = '/images/profile.jpg'
@@ -35,13 +37,11 @@ export default function Hero({ onBioClick }) {
         <p className="text-xs md:text-sm text-[var(--color-text-tertiary)] mb-1 md:mb-2">Hi, I'm</p>
         <h1 className="text-2xl md:text-3xl font-medium mb-2 md:mb-3">Jordan Rose</h1>
         <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-4 md:mb-6 max-w-3xl hidden md:block">
-          Welcome to my semi-production grade playground, evolved from a personal
-          testing environment. This is an ephemeral, declarative, automated environment
-          that is destroyed and rebuilt every day driven 100% by EaC/IaC. 
+          {demoCopy.heroLong}
         </p>
         {/* Shorter version for mobile */}
         <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed mb-4 md:hidden">
-          Ephemeral, declarative infrastructure — EKS, GitOps via ArgoCD, and a full observability stack. Rebuilt every day.
+          {demoCopy.heroShort}
         </p>
         <div className="flex flex-wrap gap-1.5 md:gap-2">
           {['Terraform', 'Helm', 'ArgoCD', 'AWS EKS', 'OTel', 'Grafana/Loki/Tempo/Prometheus'].map((tag) => (
@@ -71,7 +71,7 @@ export default function Hero({ onBioClick }) {
             diving deep into solutioning and architecture and have developed a
             real passion for observability.
           </p>
-          <p className="text-sm text-[var(--color-text-secondary)] leading-relaxed">
+          <div className="flex flex-wrap gap-2">
             {['AWS Certified Solutions Architect', 'CKA', 'OTel'].map((tag) => (
               <span
                 key={tag}
@@ -80,7 +80,7 @@ export default function Hero({ onBioClick }) {
                 {tag}
               </span>
             ))}
-          </p>
+          </div>
           <p className="text-xs text-[var(--color-text-tertiary)] mt-4 flex items-center gap-1">
             More about me <i className="ti ti-chevron-right" aria-hidden="true" />
           </p>
