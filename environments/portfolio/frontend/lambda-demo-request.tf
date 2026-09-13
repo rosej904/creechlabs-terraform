@@ -85,7 +85,7 @@ resource "aws_lambda_function" "demo_request" {
 
   environment {
     variables = {
-      SES_FROM_ADDRESS      = var.demo_notify_email
+      SES_FROM_ADDRESS      = "demo@${var.domain_name}"
       DEMO_NOTIFY_EMAIL     = var.demo_notify_email
       SES_CONFIGURATION_SET = aws_sesv2_configuration_set.demo.configuration_set_name
     }
