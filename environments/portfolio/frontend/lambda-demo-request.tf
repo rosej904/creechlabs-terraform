@@ -40,6 +40,7 @@ data "aws_iam_policy_document" "demo_request_policy" {
     sid     = "SendDemoRequestMail"
     actions = ["ses:SendEmail"]
     resources = [
+      aws_sesv2_email_identity.domain.arn,
       aws_sesv2_email_identity.demo_notify.arn,
       aws_sesv2_configuration_set.demo.arn,
     ]
