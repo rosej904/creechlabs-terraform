@@ -100,8 +100,9 @@ export default function DemoRequestModal({ onClose }) {
               : 'Your mail app should be opening with the request ready to send.'}
           </p>
           <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-            Once it reaches me I kick off the build — the cluster and telemetry pipelines
-            take {PROVISION_ETA} to come up, then this demo will be live!
+            Thank you! I have recieved your email and once approved the demo will be live in {PROVISION_ETA}!
+            The full environment is ephemeral and is created/destroyed by automation - including the EKS cluster, GitOps sync (ArgoCD), observability stack, demo app, etc. 
+            This page will update once live!
           </p>
           <div className="mt-2 flex items-center gap-2 text-xs text-[var(--color-text-tertiary)]">
             <span>
@@ -131,8 +132,7 @@ export default function DemoRequestModal({ onClose }) {
     <Modal title="Request a demo" onClose={onClose}>
       <div className="max-w-lg mx-auto flex flex-col gap-4">
         <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-          Tell me where to send the link. I build the stack on request rather than leaving it
-          running, so expect a reply with a live URL and read-only Grafana credentials.
+          Send over the demo request and once approved and the environment is provisioned, this page will update!
         </p>
 
         <Field label="Name">

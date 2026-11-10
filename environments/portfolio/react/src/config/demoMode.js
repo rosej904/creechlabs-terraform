@@ -96,7 +96,7 @@ export const demoCopy = {
   showcase: {
     heading: 'See it running',
     body: IS_ON_DEMAND
-      ? `Nothing is running right now. Request a live demo and the environment will be provisioned in about ${PROVISION_ETA}!`
+      ? `Nothing is running right now. Request a live demo, the environment will be provisioned in about ${PROVISION_ETA} and this panel will go live with a production grade observability demo!`
       : `The cluster runs ${SCHEDULE_WINDOW}. Request a demo for a window outside that.`,
     cta: 'Request a demo',
     footnote: 'Requests are sent to my email for validation.',
